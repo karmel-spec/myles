@@ -1,0 +1,9 @@
+{
+  "name": "myles-baby-book",
+  "private": true,
+  "description": "The Birth of Myles Bryant White — a keepsake book and family web app",
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "8.2.0"
+  }
+}
