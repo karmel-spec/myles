@@ -157,7 +157,8 @@ dialog.sheet::backdrop{background:rgba(30,25,18,.5)}
 @media print{
   @page{size:8.5in 11in;margin:0}
   body{background:#fff;padding:0}
-  .wrap{max-width:none}
+  .wrap{max-width:none;width:var(--sheet-w)}
+  html,body{width:var(--sheet-w)}
   .top,.bar,.pinbar,.note,.coverart,.view:not(#view-book){display:none!important}
   .view.on{display:block}
   .book{display:block}
