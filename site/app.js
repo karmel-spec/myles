@@ -265,7 +265,8 @@
     // marked "full" gets its own page, slipped in when the current page is full so the order holds.
     state.chapters.forEach(ch => {
       let p = null, inner = null; const pendingFull = [];
-      const flushFull = () => { pendingFull.splice(0).forEach(f => photoPage(f.photo, f.title)); };
+      const fullPage = (f) => { const fp = photoPage(f.photo, f.title); if (f.words) { const plate = fp.querySelector('.plate'); plate.textContent = ''; plate.appendChild(el('b', null, f.title)); plate.appendChild(document.createTextNode(f.words)); } };
+      const flushFull = () => { pendingFull.splice(0).forEach(fullPage); };
       const newPage = () => { flushFull(); p = frame(page()); inner = el('div', 'inner'); p.appendChild(inner); };
       const cqw = () => p.clientWidth / 100;
       const spare = () => (p.clientHeight * 0.985 - inner.getBoundingClientRect().height) / cqw();   // room left on the page, in cqw
@@ -312,9 +313,9 @@
           // Without a photo it is a centered passage in the flow.
           const hero = photos.find(x => x.size === 'full') || photos[0];
           if (!hero) { add(featureNote(e)); return; }
-          flushFull();
-          const fp = photoPage(hero, e.title); const plate = fp.querySelector('.plate'); plate.textContent = ''; plate.appendChild(el('b', null, e.title + (e.time ? ' · ' + e.time : ''))); plate.appendChild(document.createTextNode(e.body + (hero.caption ? ' ' + hero.caption : '')));
-          p = null;
+          const lead = { photo: hero, title: e.title + (e.time ? ' · ' + e.time : ''), words: e.body + (hero.caption ? ' ' + hero.caption : '') };
+          if (p && spare() > 60) pendingFull.push(lead);        // the page has barely begun: fill it first, the lead photo follows at the page turn
+          else { flushFull(); fullPage(lead); p = null; }      // otherwise the lead photo comes right here
           const rest = photos.filter(x => x !== hero);
           partitionRows(rest.filter(x => x.size !== 'small')).forEach(addRow);
           chunk(rest.filter(x => x.size === 'small'), 4).forEach(phs => addRow({ phs, h: Math.min(rowHeight(phs), SMALL_MAX) }));
@@ -325,8 +326,8 @@
         if (rest.length === 1 && arOf(rest[0]) < 1.05) { add(sideRow(e, rest[0], rest[0].size === 'small')); normals = []; smalls.length = 0; }
         else if (normals.length % 2 === 1 && arOf(normals[0]) < 1 && e.body.length <= 320) { add(sideRow(e, normals[0])); normals = normals.slice(1); }
         else add(textRow(e));
+        chunk(smalls, 4).forEach(phs => addRow({ phs, h: Math.min(rowHeight(phs), SMALL_MAX) }));   // detail shots sit close to the words
         partitionRows(normals).forEach(addRow);
-        chunk(smalls, 4).forEach(phs => addRow({ phs, h: Math.min(rowHeight(phs), SMALL_MAX) }));
         fulls.forEach(photo => pendingFull.push({ photo, title: e.title }));
       });
       flushFull();
