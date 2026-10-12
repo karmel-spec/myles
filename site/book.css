@@ -152,6 +152,9 @@ dialog.sheet::backdrop{background:rgba(30,25,18,.5)}
 .sheet .ps img{width:64px;height:64px;object-fit:cover;border-radius:8px;background:var(--line);grid-row:1/4}
 .sheet .ps .when{font:italic 14px/1.3 var(--body);color:var(--muted)}
 .sheet .ps select,.sheet .ps input{padding:7px 9px;font-size:15px;width:100%}
+.sheet .ps.dup img{opacity:.45}
+.sheet .ps.dup select,.sheet .ps.dup input{display:none}
+.sheet .ps .keep{margin-left:8px;padding:4px 10px;font-size:12px}
 
 /* ---- print ---- */
 @media print{

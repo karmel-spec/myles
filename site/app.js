@@ -442,6 +442,43 @@
   }
   const fmtWhen = (d) => d ? d.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'no date in the photo';
 
+  /* ---------- near-duplicates: keep the sharpest of a burst ---------- */
+  // Fingerprint = 64-bit difference hash of a 9x8 grayscale thumbnail, plus a sharpness
+  // score (variance of a Laplacian over a 64x64 grayscale). Two photos within two minutes
+  // of each other whose hashes differ in 10 bits or fewer are the same shot.
+  function loadImg(src) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('image failed to load')); i.src = src; }); }
+  function grayOf(img, w, h) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, w, h); const d = x.getImageData(0, 0, w, h).data; const g = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) g[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
+    return g;
+  }
+  async function fingerprint(src) {
+    const img = await loadImg(src);
+    const g = grayOf(img, 9, 8); const bits = [];
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) bits.push(g[r * 9 + c] > g[r * 9 + c + 1] ? 1 : 0);
+    const s = grayOf(img, 64, 64); let sum = 0, sum2 = 0, n = 0;
+    for (let r = 1; r < 63; r++) for (let c = 1; c < 63; c++) { const v = 4 * s[r * 64 + c] - s[(r - 1) * 64 + c] - s[(r + 1) * 64 + c] - s[r * 64 + c - 1] - s[r * 64 + c + 1]; sum += v; sum2 += v * v; n++; }
+    const mean = sum / n; const sharp = sum2 / n - mean * mean;
+    return { hash: bits, sharp, px: img.naturalWidth * img.naturalHeight };
+  }
+  const hamming = (a, b) => { let d = 0; for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) d++; return d; };
+  async function dedupe(list) {
+    for (const ph of list) { try { ph.fp = await fingerprint(ph.thumb); } catch (e) { ph.fp = null; } ph.dup = false; ph.dupOf = null; }
+    const groups = [];
+    list.forEach(ph => {
+      if (!ph.fp) return;
+      const g = groups.find(gr => gr.some(o => o.fp && hamming(o.fp.hash, ph.fp.hash) <= 10 && (!o.when || !ph.when || Math.abs(o.when - ph.when) <= 120000)));
+      if (g) g.push(ph); else groups.push([ph]);
+    });
+    let skipped = 0;
+    groups.filter(g => g.length > 1).forEach(g => {
+      const best = g.reduce((a, b) => (b.fp.sharp > a.fp.sharp * 1.05 || (Math.abs(b.fp.sharp - a.fp.sharp) <= a.fp.sharp * 0.05 && b.fp.px > a.fp.px)) ? b : a);
+      g.forEach(ph => { if (ph !== best) { ph.dup = true; ph.dupOf = best; skipped++; } });
+    });
+    return skipped;
+  }
+
   const pdlg = $('#psheet');
   let placing = [];
   $('#bulk-file').addEventListener('change', async (ev) => {
@@ -458,15 +495,19 @@
         placing.push({ url: j.url, thumb: data, when, caption: '', entry: bestEntryFor(when) });
       }
       placing.sort((a, b) => (a.when ? a.when.getTime() : 0) - (b.when ? b.when.getTime() : 0));
+      setStatus('Checking for duplicate shots…'); await dedupe(placing);
       openPlacer();
     } catch (e) { setStatus(e.message || String(e)); }
     lbl.classList.remove('busy'); if (state.mode === 'live' && !placing.length) syncChrome();
   });
   function openPlacer() {
     const list = $('#ps-list'); list.innerHTML = ''; $('#ps-err').textContent = '';
+    const dups = placing.filter(p => p.dup).length;
+    $('#ps-note').textContent = dups ? dups + (dups === 1 ? ' near-duplicate shot is' : ' near-duplicate shots are') + ' skipped in favor of the sharpest; tap Keep on any you want anyway.' : '';
     placing.forEach((ph, i) => {
-      const row = el('div', 'ps'); const img = el('img'); img.src = ph.thumb; img.alt = ''; row.appendChild(img);
-      row.appendChild(el('div', 'when', fmtWhen(ph.when)));
+      const row = el('div', 'ps' + (ph.dup ? ' dup' : '')); const img = el('img'); img.src = ph.thumb; img.alt = ''; row.appendChild(img);
+      const when = el('div', 'when', fmtWhen(ph.when)); row.appendChild(when);
+      if (ph.dup) { const k = el('button', 'btn keep', 'Duplicate · skipped. Keep?'); k.type = 'button'; k.addEventListener('click', () => { ph.dup = false; row.classList.remove('dup'); k.remove(); }); when.appendChild(k); }
       const sel = el('select'); sel.id = 'ps-sel-' + i;
       state.chapters.forEach(ch => { const og = el('optgroup'); og.label = ch.title;
         entriesOf(ch.id).forEach(e => { const o = el('option', null, (e.time ? e.time + ' · ' : '') + (e.title || e.body.slice(0, 40))); o.value = e.id; og.appendChild(o); });
@@ -493,16 +534,19 @@
     $('#a-go').disabled = true; $('#a-err').textContent = 'Reading the album…';
     try {
       const a = await api({ op: 'album', url });
-      const list = a.photos || []; placing = [];
+      const list = a.photos || []; placing = []; let videos = 0, failed = 0;
       for (let i = 0; i < list.length; i++) {
-        $('#a-err').textContent = 'Copying photo ' + (i + 1) + ' of ' + list.length + (a.title ? ' from "' + a.title + '"' : '') + '…';
-        const j = await api({ op: 'import', src: list[i].src });
+        $('#a-err').textContent = 'Copying ' + (i + 1) + ' of ' + list.length + (a.title ? ' from "' + a.title + '"' : '') + '…';
+        let j; try { j = await api({ op: 'import', src: list[i].src }); } catch (e) { failed++; continue; }
+        if (j.skipped === 'video') { videos++; continue; }
         const when = exifToDate(j.takenAt) || albumToDate(list[i].takenAt);
-        placing.push({ url: j.url, thumb: list[i].src.replace(/=[^/]*$/, '') + '=w160-h160-c', when, caption: '', entry: bestEntryFor(when) });
+        placing.push({ url: j.url, thumb: j.thumb || j.url, when, caption: '', entry: bestEntryFor(when) });
       }
       placing.sort((x, y) => (x.when ? x.when.getTime() : 0) - (y.when ? y.when.getTime() : 0));
+      $('#a-err').textContent = 'Checking for duplicate shots…'; const dups = await dedupe(placing);
       adlg.close(); $('#a-err').textContent = '';
-      if (placing.length) openPlacer(); else setStatus('No photos found in that album.');
+      setStatus(placing.length + ' photos copied' + (videos ? ', ' + videos + ' video' + (videos === 1 ? '' : 's') + ' left out' : '') + (dups ? ', ' + dups + ' duplicate' + (dups === 1 ? '' : 's') + ' skipped' : '') + (failed ? ', ' + failed + ' could not be copied' : '') + '.');
+      if (placing.length) openPlacer(); else if (!videos && !failed) setStatus('No photos found in that album.');
     } catch (e) { $('#a-err').textContent = e.message || String(e); }
     $('#a-go').disabled = false;
   });
@@ -510,7 +554,7 @@
     ev.preventDefault(); $('#ps-err').textContent = 'Placing…'; $('#ps-save').disabled = true;
     try {
       const byTarget = new Map();
-      placing.forEach(ph => { const k = ph.target; if (!byTarget.has(k)) byTarget.set(k, []); byTarget.get(k).push(ph); });
+      placing.filter(ph => !ph.dup).forEach(ph => { const k = ph.target; if (!byTarget.has(k)) byTarget.set(k, []); byTarget.get(k).push(ph); });
       for (const [k, phs] of byTarget) {
         let e;
         if (k.startsWith('new:')) {

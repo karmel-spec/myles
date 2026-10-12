@@ -125,17 +125,29 @@ export default async (req) => {
       const src = String(body.src || '');
       if (!/^https:\/\/lh3\.googleusercontent\.com\//.test(src)) return json({ error: 'not a Google Photos image URL' }, 400);
       const base = src.replace(/=[^/]*$/, '');
+      // videos: Google serves the movie for "=dv" only on video items; a photo never answers video/*
+      try {
+        const v = await fetch(base + '=dv', { headers: { Range: 'bytes=0-1023' }, signal: AbortSignal.timeout(6000) });
+        if (v.ok && /^video\//.test(v.headers.get('content-type') || '')) return json({ skipped: 'video' });
+      } catch (e) { /* not a video, or unreachable: carry on as a photo */ }
       let takenAt = null;   // from the original's EXIF (first 256 KB), best effort
       try {
-        const o = await fetch(base + '=d', { headers: { Range: 'bytes=0-262143' }, signal: AbortSignal.timeout(12000) });
+        const o = await fetch(base + '=d', { headers: { Range: 'bytes=0-262143' }, signal: AbortSignal.timeout(6000) });
         if (o.ok) takenAt = exifDateTime(new DataView(await o.arrayBuffer()));
       } catch (e) { takenAt = null; }
-      const r = await fetch(base + '=w2400-h2400', { signal: AbortSignal.timeout(20000) });
+      const r = await fetch(base + '=w2400-h2400', { signal: AbortSignal.timeout(15000) });
       if (!r.ok) return json({ error: 'Google answered ' + r.status + ' for that photo' }, 502);
       const type = (r.headers.get('content-type') || 'image/jpeg').split(';')[0];
       const buf = Buffer.from(await r.arrayBuffer());
       if (!buf.length) return json({ error: 'empty photo' }, 502);
-      return json({ url: await savePhoto(buf, type), takenAt });
+      const url = await savePhoto(buf, type);
+      // a small copy for the review sheet and duplicate detection
+      let thumb = null;
+      try {
+        const s = await fetch(base + '=w320-h320', { signal: AbortSignal.timeout(6000) });
+        if (s.ok) { const sb = Buffer.from(await s.arrayBuffer()); if (sb.length) { const tn = url.replace(/\.(\w+)$/, '-s.$1'); await store().set('photo/' + tn.split('/').pop(), sb, { metadata: { type: (s.headers.get('content-type') || type).split(';')[0] } }); thumb = tn; } }
+      } catch (e) { thumb = null; }
+      return json({ url, thumb, takenAt });
     }
 
     return json({ error: 'unknown op' }, 400);
