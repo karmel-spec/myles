@@ -166,10 +166,53 @@
     document.fonts.addEventListener('loadingdone', () => { if ($('#view-book').classList.contains('on')) renderBook(); });
   } else fontsSettled = true;
 
+  /* ---------- photo shapes for the book ---------- */
+  // The book lays photos out at their own proportions (no cropping to a fixed frame), so it
+  // needs each photo's aspect ratio. Measured once per photo; until then a portrait is assumed.
+  const dims = new Map();           // url -> width / height
+  let dimsLoading = null;
+  const arOf = (p) => dims.get(p.url) || 0.8;
+  function ensureDims(urls) {
+    const missing = urls.filter(u => !dims.has(u));
+    if (!missing.length) return null;
+    if (!dimsLoading) dimsLoading = Promise.all(missing.map(u => loadImg(u).then(i => dims.set(u, (i.naturalWidth / i.naturalHeight) || 0.8)).catch(() => dims.set(u, 0.8)))).then(() => { dimsLoading = null; });
+    return dimsLoading;
+  }
+
+  // Photo rows: every photo in a row shares one height and keeps its own shape, so a row of
+  // three portraits comes out smaller than a pair and a lone landscape runs the width of the
+  // text block. Heights are in cqw (hundredths of the page width); the text block is INNER_W wide.
+  const INNER_W = 80, ROW_GAP = 2, ROW_MAX = 60, SMALL_MAX = 26;
+  const rowHeight = (phs) => (INNER_W - ROW_GAP * (phs.length - 1)) / phs.reduce((s, p) => s + arOf(p), 0);
+  function partitionRows(list) {      // greedy; the cap alternates so pairs and triples both happen
+    const rows = []; let cur = [];
+    list.forEach(p => { cur.push(p); const cap = rows.length % 2 === 0 ? 52 : 40; if (rowHeight(cur) <= cap) { rows.push(cur); cur = []; } });
+    if (cur.length) {
+      const last = rows[rows.length - 1];
+      if (cur.length === 1 && arOf(cur[0]) < 1 && last && rowHeight(last.concat(cur)) >= 22) last.push(cur[0]);   // no lone portrait at the end
+      else rows.push(cur);
+    }
+    return rows.map(phs => ({ phs, h: Math.min(rowHeight(phs), ROW_MAX) }));
+  }
+  function rowNode(row, h) {
+    const wrap = el('div', 'pset');
+    const r = el('div', 'prow'); r.style.height = (h || row.h).toFixed(2) + 'cqw';
+    row.phs.forEach(p => { const f = el('figure'); const img = el('img'); img.src = p.url; img.alt = p.caption || ''; img.style.aspectRatio = String(arOf(p)); f.appendChild(img); r.appendChild(f); });
+    wrap.appendChild(r);
+    const caps = row.phs.map(p => p.caption).filter(Boolean);
+    if (caps.length) wrap.appendChild(el('div', 'pcap', caps.join(' · ')));
+    return wrap;
+  }
+  const chunk = (a, n) => { const out = []; for (let i = 0; i < a.length; i += n) out.push(a.slice(i, i + n)); return out; };
+
+  let dimsRerender = false;
   function renderBook() {
     applySize();
     const root = $('#book'); root.innerHTML = '';
     const b = state.book;
+    { const urls = []; state.entries.forEach(e => (e.photos || []).forEach(p => urls.push(p.url))); if (b.coverPhoto) urls.push(b.coverPhoto.url);
+      const pending = ensureDims(urls);
+      if (pending && !dimsRerender) { dimsRerender = true; pending.then(() => { dimsRerender = false; if ($('#view-book').classList.contains('on')) renderBook(); }); } }
     const page = (cls) => { const p = el('div', 'page' + (cls ? ' ' + cls : '')); root.appendChild(p); return p; };
     // .inner is a normal block (the .frame overlay is absolute), so its height is the content height; the page itself clips
     const fits = (p) => p.querySelector('.inner').getBoundingClientRect().height <= p.clientHeight * 0.985;
@@ -217,46 +260,76 @@
       const vis = el('div'); vis.appendChild(el('b', null, 'First visitors')); vis.appendChild(el('span', 'txt', b.visitors)); st.appendChild(vis);
       i.appendChild(st); p.appendChild(i); }
 
-    // chapters
+    // chapters: the text flows page to page with the photos set among it. A moment's photos
+    // follow its words as rows of mixed size; a single portrait sits beside the words; a photo
+    // marked "full" gets its own page, slipped in when the current page is full so the order holds.
     state.chapters.forEach(ch => {
-      let p = frame(page()); let inner = el('div', 'inner'); p.appendChild(inner);
+      let p = null, inner = null; const pendingFull = [];
+      const flushFull = () => { pendingFull.splice(0).forEach(f => photoPage(f.photo, f.title)); };
+      const newPage = () => { flushFull(); p = frame(page()); inner = el('div', 'inner'); p.appendChild(inner); };
+      const cqw = () => p.clientWidth / 100;
+      const spare = () => (p.clientHeight * 0.985 - inner.getBoundingClientRect().height) / cqw();   // room left on the page, in cqw
+      const tryAdd = (node) => { if (!p) newPage(); inner.appendChild(node); if (fits(p)) return true; inner.removeChild(node); return false; };
+      const add = (node) => { if (!tryAdd(node)) { newPage(); inner.appendChild(node); } };
+      const addRow = (row) => {
+        if (tryAdd(rowNode(row))) return;
+        if (p) {                                              // shrink the row into the space that is left, within reason
+          const room = spare() - 4.5;
+          for (const h of [room, room * 0.92]) if (h >= 22 && h >= row.h * 0.45 && tryAdd(rowNode(row, h))) return;
+        }
+        newPage(); inner.appendChild(rowNode(row));
+      };
+      const pullQuote = (e) => {   // a quote set into the flow of the page rather than on a page of its own
+        const q = el('div', 'pull'); q.appendChild(el('blockquote', null, e.body)); if (e.cite) q.appendChild(el('cite', null, e.cite)); return q;
+      };
+      const featureNote = (e) => { // a featured moment that has no photo yet: a centered passage in the flow
+        const f = el('div', 'pull note'); if (e.time) f.appendChild(el('cite', null, e.time)); f.appendChild(el('h3', null, e.title)); f.appendChild(el('p', null, e.body)); return f;
+      };
+      const textRow = (e) => { const row = el('div', 'row'); row.appendChild(el('time', null, e.time || '')); row.appendChild(words(e)); return row; };
+      const words = (e) => { const t = el('p'); if (e.title) t.appendChild(el('b', null, e.title + '. ')); t.appendChild(document.createTextNode(e.body)); return t; };
+      const sideRow = (e, ph, small) => {   // words on the left, one photo on the right
+        const row = el('div', 'side' + (small ? ' sm' : '')); const left = el('div');
+        left.appendChild(el('time', null, e.time || '')); left.appendChild(words(e)); row.appendChild(left);
+        const f = el('figure'); const img = el('img'); img.src = ph.url; img.alt = ph.caption || ''; img.style.aspectRatio = String(arOf(ph)); f.appendChild(img);
+        if (ph.caption) f.appendChild(el('figcaption', null, ph.caption)); row.appendChild(f); return row;
+      };
+
+      newPage();
       inner.appendChild(el('div', 'ch', ch.title));
       inner.appendChild(el('h2', 'h', ch.subtitle || ch.title));
       inner.appendChild(el('div', 'rule'));
-      const items = [];
+
       entriesOf(ch.id).forEach(e => {
-        if (e.kind === 'quote') { items.push({ quote: e }); return; }
-        if (e.kind === 'feature') { items.push({ feature: e }); return; }
-        const row = el('div', 'row'); row.appendChild(el('time', null, e.time || ''));
-        const t = el('p'); if (e.title) t.appendChild(el('b', null, e.title + '. ')); t.appendChild(document.createTextNode(e.body)); row.appendChild(t);
-        items.push({ node: row });
-        const ph = e.photos || [];
-        for (let k = 0; k + 1 < ph.length; k += 2) { const g = el('div', 'two'); ph.slice(k, k + 2).forEach(x => g.appendChild(photoFig(x))); items.push({ node: g }); }
-        if (ph.length % 2 === 1) items.push({ photo: ph[ph.length - 1], title: e.title });
-      });
-      items.forEach(it => {
-        if (it.quote) {
-          const e = it.quote; const q = frame(page('quote')); const qi = el('div', 'quote');
-          qi.appendChild(sprig('#c9b394'));
-          qi.appendChild(el('blockquote', e.body.length > 90 ? 'long' : '', e.body));
-          if (e.cite) qi.appendChild(el('cite', null, e.cite));
-          if (e.photos && e.photos.length) { qi.appendChild(el('div', 'rule')); const g = el('div', 'two'); e.photos.slice(0, 2).forEach(x => g.appendChild(photoFig(x))); qi.appendChild(g); }
-          q.appendChild(qi); p = null; return;
+        const photos = e.photos || [];
+        if (e.kind === 'quote') {
+          add(pullQuote(e));
+          partitionRows(photos).forEach(addRow);
+          return;
         }
-        if (it.feature) {
-          // a moment that deserves its own page: full-bleed photo with the words on the plate,
-          // or, until a photo is attached, a centered page of its own
-          const e = it.feature; const ph = (e.photos || [])[0];
-          if (ph) { const fp = photoPage(ph, e.title); const plate = fp.querySelector('.plate'); plate.textContent = ''; plate.appendChild(el('b', null, e.title + (e.time ? ' · ' + e.time : ''))); plate.appendChild(document.createTextNode(e.body + (ph.caption ? ' ' + ph.caption : ''))); }
-          else { const fp = frame(page('feature')); const fi = el('div', 'quote'); fi.appendChild(sprig('#c9b394')); fi.appendChild(el('div', 'ch', e.time || '')); fi.appendChild(el('h2', 'h', e.title)); fi.appendChild(el('div', 'rule')); const bd = el('div', 'fbody', e.body); fi.appendChild(bd); fp.appendChild(fi); }
-          (e.photos || []).slice(1).forEach(x => photoPage(x, e.title));
-          p = null; return;
+        if (e.kind === 'feature') {
+          // its own page: the lead photo full bleed with the words on the plate (the first photo
+          // marked "full", else the first photo); the rest of its photos follow as rows.
+          // Without a photo it is a centered passage in the flow.
+          const hero = photos.find(x => x.size === 'full') || photos[0];
+          if (!hero) { add(featureNote(e)); return; }
+          flushFull();
+          const fp = photoPage(hero, e.title); const plate = fp.querySelector('.plate'); plate.textContent = ''; plate.appendChild(el('b', null, e.title + (e.time ? ' · ' + e.time : ''))); plate.appendChild(document.createTextNode(e.body + (hero.caption ? ' ' + hero.caption : '')));
+          p = null;
+          const rest = photos.filter(x => x !== hero);
+          partitionRows(rest.filter(x => x.size !== 'small')).forEach(addRow);
+          chunk(rest.filter(x => x.size === 'small'), 4).forEach(phs => addRow({ phs, h: Math.min(rowHeight(phs), SMALL_MAX) }));
+          return;
         }
-        if (it.photo) { photoPage(it.photo, it.title); p = null; return; }
-        if (!p) { p = frame(page()); inner = el('div', 'inner'); p.appendChild(inner); }
-        inner.appendChild(it.node);
-        if (!fits(p)) { inner.removeChild(it.node); p = frame(page()); inner = el('div', 'inner'); p.appendChild(inner); inner.appendChild(it.node); }
+        const fulls = photos.filter(x => x.size === 'full'), rest = photos.filter(x => x.size !== 'full');
+        let normals = rest.filter(x => x.size !== 'small'); const smalls = rest.filter(x => x.size === 'small');
+        if (rest.length === 1 && arOf(rest[0]) < 1.05) { add(sideRow(e, rest[0], rest[0].size === 'small')); normals = []; smalls.length = 0; }
+        else if (normals.length % 2 === 1 && arOf(normals[0]) < 1 && e.body.length <= 320) { add(sideRow(e, normals[0])); normals = normals.slice(1); }
+        else add(textRow(e));
+        partitionRows(normals).forEach(addRow);
+        chunk(smalls, 4).forEach(phs => addRow({ phs, h: Math.min(rowHeight(phs), SMALL_MAX) }));
+        fulls.forEach(photo => pendingFull.push({ photo, title: e.title }));
       });
+      flushFull();
     });
 
     // closing
@@ -312,6 +385,9 @@
     editing.entry.photos.forEach((p, i) => {
       const row = el('div', 'pitem'); const img = el('img'); img.src = p.url; img.alt = ''; row.appendChild(img);
       const cap = el('input'); cap.placeholder = 'Caption'; cap.value = p.caption || ''; cap.addEventListener('input', () => { p.caption = cap.value; }); row.appendChild(cap);
+      const sz = el('select'); sz.title = 'Size in the book';
+      [['', 'Auto size'], ['small', 'Small'], ['full', 'Full page']].forEach(([v, t]) => { const o = el('option', null, t); o.value = v; sz.appendChild(o); });
+      sz.value = p.size || ''; sz.addEventListener('change', () => { if (sz.value) p.size = sz.value; else delete p.size; }); row.appendChild(sz);
       const rm = el('button', 'btn d', 'Remove'); rm.type = 'button'; rm.addEventListener('click', () => { editing.entry.photos.splice(i, 1); renderPhotoList(); }); row.appendChild(rm);
       list.appendChild(row);
     });

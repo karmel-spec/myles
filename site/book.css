@@ -74,7 +74,7 @@ button{cursor:pointer}
 .page{position:relative;width:100%;aspect-ratio:var(--page-ratio);max-width:100%;background:var(--ivory);color:var(--ink);overflow:hidden;box-shadow:0 1px 2px rgba(40,30,10,.12),0 14px 34px -14px rgba(40,30,10,.35);container-type:inline-size;border:1px solid rgba(60,45,20,.08);font-family:var(--body)}
 .page *{min-width:0}
 .page .frame{position:absolute;inset:5.5cqw;border:1px solid var(--sage);outline:1px solid var(--sage);outline-offset:-1.2cqw;pointer-events:none}
-.page .inner{padding:10cqw 11cqw;display:flex;flex-direction:column;gap:2.4cqw}
+.page .inner{padding:9cqw 10cqw;display:flex;flex-direction:column;gap:2.4cqw}
 .page .ch{font:500 2.4cqw/1.4 var(--display);letter-spacing:.3em;text-transform:uppercase;color:var(--brown);text-align:center}
 .page .h{font:500 6cqw/1.1 var(--display);margin:0;text-align:center;text-wrap:balance}
 .page .h em{font-style:italic;font-weight:400}
@@ -87,6 +87,27 @@ button{cursor:pointer}
 .page .two figure{margin:0;display:flex;flex-direction:column;gap:1cqw}
 .page .two img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
 .page .two figcaption{font:italic 2.5cqw/1.35 var(--body);color:var(--ink-soft);text-align:center}
+/* photo rows: one shared height per row, each photo at its own proportions, centered */
+.page .pset{display:flex;flex-direction:column;gap:1cqw;margin-top:.6cqw}
+.page .prow{display:flex;gap:2cqw;justify-content:center;align-items:stretch}
+.page .prow figure{margin:0;height:100%;flex:0 0 auto}
+.page .prow img{height:100%;width:auto;max-width:100%;display:block;object-fit:cover}
+.page .pcap{font:italic 2.5cqw/1.35 var(--body);color:var(--ink-soft);text-align:center}
+/* a quote or featured passage set into the page */
+.page .pull{display:flex;flex-direction:column;align-items:center;text-align:center;gap:1.6cqw;padding:2.2cqw 6cqw 2.6cqw;margin:.8cqw 0;border-top:1px solid var(--tan);border-bottom:1px solid var(--tan)}
+.page .pull blockquote{margin:0;font:italic 500 4.2cqw/1.3 var(--display);text-wrap:balance}
+.page .pull cite{font:400 2.3cqw/1.6 var(--body);font-style:normal;letter-spacing:.22em;text-transform:uppercase;color:var(--brown);max-width:64cqw}
+.page .pull h3{margin:0;font:500 4.6cqw/1.15 var(--display)}
+.page .pull p{margin:0;font:italic 3cqw/1.5 var(--body);color:var(--ink);max-width:60cqw}
+/* words beside a single photo */
+.page .side{display:grid;grid-template-columns:1fr 34cqw;gap:1cqw 3.2cqw;align-items:start}
+.page .side.sm{grid-template-columns:1fr 24cqw}
+.page .side time{display:block;font:600 2.5cqw/1.5 var(--display);letter-spacing:.12em;color:var(--sage-deep);font-variant-numeric:tabular-nums;margin-bottom:.6cqw}
+.page .side p{margin:0;font-size:2.75cqw;line-height:1.45}
+.page .side p b{font-weight:600;color:var(--brown)}
+.page .side figure{margin:0;display:flex;flex-direction:column;gap:1cqw;padding-top:.4cqw}
+.page .side img{width:100%;height:auto;display:block}
+.page .side figcaption{font:italic 2.5cqw/1.35 var(--body);color:var(--ink-soft);text-align:center}
 .page .folio{position:absolute;bottom:1.8cqw;left:0;right:0;text-align:center;font:500 2.3cqw/1 var(--display);letter-spacing:.3em;color:var(--sage)}
 .page .sprig{width:15cqw;height:auto;align-self:center}
 .page .ph-empty{background:linear-gradient(135deg,#d6ddcb 0%,#e7dac4 55%,#f1ebdf 100%);display:flex;align-items:center;justify-content:center;font:italic 2.6cqw/1.2 var(--body);color:var(--sage-deep)}
@@ -139,7 +160,8 @@ dialog.sheet::backdrop{background:rgba(30,25,18,.5)}
 .sheet textarea{min-height:120px;resize:vertical}
 .sheet .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .sheet .plist{display:flex;flex-direction:column;gap:8px}
-.sheet .pitem{display:grid;grid-template-columns:56px 1fr auto;gap:8px;align-items:center}
+.sheet .pitem{display:grid;grid-template-columns:56px 1fr auto auto;gap:8px;align-items:center}
+.sheet .pitem select{padding:7px 9px;font-size:14px}
 .sheet .pitem img{width:56px;height:56px;object-fit:cover;border-radius:8px}
 .sheet .pitem input{padding:7px 9px;font-size:15px}
 .sheet .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:4px}

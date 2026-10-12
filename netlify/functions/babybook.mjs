@@ -86,8 +86,9 @@ export default async (req) => {
     if (op === 'save_entry') {
       const en = body.entry || {}; const id = safeId(en.id);
       if (!id) return json({ error: 'entry id required' }, 400);
-      const photos = Array.isArray(en.photos) ? en.photos.slice(0, 12).map(p => ({
-        url: str(p && p.url, 400), caption: str(p && p.caption, 200) })).filter(p => /^(\/photo\/[A-Za-z0-9.-]+|https:\/\/[^\s"]+)$/.test(p.url)) : [];
+      // size: how the book lays the photo out — 'small' (a detail shot), 'full' (its own page), else automatic
+      const photos = Array.isArray(en.photos) ? en.photos.slice(0, 12).map(p => Object.assign({
+        url: str(p && p.url, 400), caption: str(p && p.caption, 200) }, ['small', 'full'].includes(p && p.size) ? { size: p.size } : {})).filter(p => /^(\/photo\/[A-Za-z0-9.-]+|https:\/\/[^\s"]+)$/.test(p.url)) : [];
       const kind = ['moment', 'quote', 'feature', 'cover', 'facts'].includes(en.kind) ? en.kind : 'moment';
       const doc = await readDoc('doc/entries');
       doc[id] = { id, chapter: safeId(en.chapter), time_label: str(en.time, 40), sort: Number(en.sort) || 0, kind,
