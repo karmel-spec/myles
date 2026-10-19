@@ -117,7 +117,7 @@
     state.chapters.forEach(ch => {
       const sec = el('section', 'ch');
       const hero = heroOf(ch);
-      const head = el('div', 'ch-head' + (hero ? ' hero' : ''));
+      const head = el('div', 'ch-head' + (hero ? ' hero' : '')); head.dataset.id = 'ch:' + ch.id;   // data-id: a stable handle for deep links and mark-up
       if (hero) { const img = el('img'); img.src = hero.url; img.alt = hero.caption || ''; img.loading = 'lazy'; head.appendChild(img); }
       const txt = el('div', 'ch-txt');
       txt.appendChild(el('div', 'eyebrow', ch.title + (ch.big ? ' · ' + ch.big : '')));
@@ -126,7 +126,7 @@
       entriesOf(ch.id).forEach(e => {
         const live = state.mode === 'live';
         if (e.kind === 'journal') {
-          const j = el(live ? 'button' : 'div', 'jn'); if (live) j.type = 'button';
+          const j = el(live ? 'button' : 'div', 'jn'); if (live) j.type = 'button'; j.dataset.id = e.id;
           j.appendChild(el('div', 'by', journalBy(e) + (e.time ? ' · ' + e.time : '')));
           if (e.title) j.appendChild(el('h3', null, e.title));
           paragraphs(e.body).forEach((t, i) => { const p = el('p', i === 0 ? 'first' : null, t); j.appendChild(p); });
@@ -135,14 +135,14 @@
           sec.appendChild(j); return;
         }
         if (e.kind === 'quote' || e.kind === 'feature') {
-          const q = el(live ? 'button' : 'div', 'q' + (e.kind === 'feature' ? ' f' : '')); if (live) q.type = 'button';
+          const q = el(live ? 'button' : 'div', 'q' + (e.kind === 'feature' ? ' f' : '')); if (live) q.type = 'button'; q.dataset.id = e.id;
           if (e.kind === 'feature') { q.appendChild(el('cite', null, e.time || '')); q.appendChild(el('h3', null, e.title)); q.appendChild(el('p', null, e.body)); }
           else { q.appendChild(el('blockquote', null, e.body)); if (e.cite) q.appendChild(el('cite', null, e.cite)); }
           if (e.photos && e.photos.length) { const ph = el('div', 'ph'); e.photos.forEach(x => { const i = el('img'); i.src = x.url; i.alt = x.caption || ''; i.loading = 'lazy'; ph.appendChild(i); }); q.appendChild(ph); }
           if (live) q.addEventListener('click', () => openEditor(e));
           sec.appendChild(q); return;
         }
-        const mo = el(live ? 'button' : 'div', 'mo' + (live ? ' edit' : '') + ((e.body.length + e.title.length) > 170 ? ' long' : '')); if (live) mo.type = 'button';
+        const mo = el(live ? 'button' : 'div', 'mo' + (live ? ' edit' : '') + ((e.body.length + e.title.length) > 170 ? ' long' : '')); if (live) mo.type = 'button'; mo.dataset.id = e.id;
         mo.appendChild(el('span', pillClass(e), e.time || '·'));
         const p = el('p'); if (e.title) { const b = el('b', null, e.title + ' '); p.appendChild(b); } p.appendChild(document.createTextNode(e.body)); mo.appendChild(p);
         if (e.photos && e.photos.length) { const ph = el('div', 'ph'); e.photos.forEach(x => { const i = el('img'); i.src = x.url; i.alt = x.caption || ''; i.loading = 'lazy'; if (x.size === 'full' || e.photos.length === 1) i.className = 'wide'; ph.appendChild(i); }); mo.appendChild(ph); }
@@ -435,7 +435,7 @@
       const pageNo = size.coverSeparate ? n + 1 : n;           // Blurb: first inside page is page 1 (recto)
       const recto = pageNo % 2 === 1;
       if (pageNo > 0 && !/quote|end|blank|photo|ded|feature|opener/.test(pg.className)) pg.appendChild(el('div', 'folio', '· ' + pageNo + ' ·'));
-      const leaf = el('div', 'leaf ' + (recto ? 'recto' : 'verso')); root.replaceChild(leaf, pg); leaf.appendChild(pg);
+      const leaf = el('div', 'leaf ' + (recto ? 'recto' : 'verso')); leaf.dataset.id = 'page:' + pageNo; root.replaceChild(leaf, pg); leaf.appendChild(pg);
     });
     const n = root.children.length;
     $('#pagecount').textContent = n + ' pages' + (size.coverSeparate ? ' inside' + (n < 20 ? ' (Blurb needs at least 20)' : '') : '');
