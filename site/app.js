@@ -179,10 +179,28 @@
   }
   $('#size').addEventListener('change', () => { sizeKey = $('#size').value; try { localStorage.setItem('babybook_size', sizeKey); } catch (e) {} applySize(); renderBook(); });
 
+  // Designs. The look of the pages (book.css keys off html[data-design]) and the rules the
+  // flow uses: crop = photos fill a fixed-width row and are cropped to it rather than sized
+  // to their own proportions; fill = the last photo row on a page is stretched to the page's
+  // bottom edge so no page ends on a gap; bleed = photo rows run edge to edge; frame = the
+  // double rule around the page.
+  const DESIGNS = {
+    linen:     { label: 'Linen & Sage',  crop: false, fill: false, bleed: false, frame: true,  dark: false },
+    editorial: { label: 'Editorial',     crop: true,  fill: true,  bleed: true,  frame: false, dark: false },
+    noir:      { label: 'Noir',          crop: true,  fill: true,  bleed: true,  frame: false, dark: true },
+  };
+  let designKey = 'linen';
+  try { designKey = localStorage.getItem('babybook_design') || 'linen'; } catch (e) {}
+  if (!DESIGNS[designKey]) designKey = 'linen';
+  const D = () => DESIGNS[designKey];
+  function applyDesign() { document.documentElement.dataset.design = designKey; $('#design').value = designKey; }
+  $('#design').addEventListener('change', () => { designKey = $('#design').value; try { localStorage.setItem('babybook_design', designKey); } catch (e) {} applyDesign(); renderBook(); });
+  applyDesign();
+
   // Pages are measured as they're filled, so the web fonts must be in before the
   // flow runs; a later swap would reflow the text and spill past the page.
   let fontsSettled = false;
-  const FONTS = ['500 16px "Cormorant Garamond"', 'italic 500 16px "Cormorant Garamond"', '600 16px "Cormorant Garamond"', '400 16px "Crimson Pro"', 'italic 400 16px "Crimson Pro"', '600 16px "Crimson Pro"'];
+  const FONTS = ['500 16px "Cormorant Garamond"', 'italic 500 16px "Cormorant Garamond"', '600 16px "Cormorant Garamond"', '400 16px "Crimson Pro"', 'italic 400 16px "Crimson Pro"', '600 16px "Crimson Pro"', '500 16px "Barlow Condensed"', '600 16px "Barlow Condensed"'];
   if (document.fonts && document.fonts.load) {
     Promise.all(FONTS.map(f => document.fonts.load(f).catch(() => null))).then(() => { fontsSettled = true; if ($('#view-book').classList.contains('on')) renderBook(); });
     document.fonts.addEventListener('loadingdone', () => { if ($('#view-book').classList.contains('on')) renderBook(); });
@@ -205,7 +223,9 @@
   // three portraits comes out smaller than a pair and a lone landscape runs the width of the
   // text block. Heights are in cqw (hundredths of the page width); the text block is INNER_W wide.
   const INNER_W = 80, ROW_GAP = 2, ROW_MAX = 60, SMALL_MAX = 26;
-  const rowHeight = (phs) => (INNER_W - ROW_GAP * (phs.length - 1)) / phs.reduce((s, p) => s + arOf(p), 0);
+  const rowW = () => D().bleed ? 100 : INNER_W;           // a bleeding row is as wide as the page
+  const rowGap = () => D().crop ? 1 : ROW_GAP;
+  const rowHeight = (phs) => (rowW() - rowGap() * (phs.length - 1)) / phs.reduce((s, p) => s + arOf(p), 0);
   function partitionRows(list) {      // greedy; the cap alternates so pairs and triples both happen
     const rows = []; let cur = [];
     list.forEach(p => { cur.push(p); const cap = rows.length % 2 === 0 ? 52 : 40; if (rowHeight(cur) <= cap) { rows.push(cur); cur = []; } });
@@ -214,12 +234,18 @@
       if (cur.length === 1 && arOf(cur[0]) < 1 && last && rowHeight(last.concat(cur)) >= 22) last.push(cur[0]);   // no lone portrait at the end
       else rows.push(cur);
     }
-    return rows.map(phs => ({ phs, h: Math.min(rowHeight(phs), ROW_MAX) }));
+    const max = D().crop ? 66 : ROW_MAX;
+    return rows.map(phs => ({ phs, h: Math.min(rowHeight(phs), max) }));
   }
+  // A row of photos at one shared height. Linen keeps each photo at its own proportions and
+  // centers the row; a cropping design stretches the row to the full width, giving each photo
+  // a share of it in proportion to its shape and cropping to the shared height.
   function rowNode(row, h) {
-    const wrap = el('div', 'pset');
+    const wrap = el('div', 'pset' + (D().crop ? ' crop' : '') + (D().bleed ? ' bleed' : ''));
     const r = el('div', 'prow'); r.style.height = (h || row.h).toFixed(2) + 'cqw';
-    row.phs.forEach(p => { const f = el('figure'); const img = el('img'); img.src = p.url; img.alt = p.caption || ''; img.style.aspectRatio = String(arOf(p)); f.appendChild(img); r.appendChild(f); });
+    row.phs.forEach(p => { const f = el('figure'); const img = el('img'); img.src = p.url; img.alt = p.caption || '';
+      if (D().crop) f.style.flexGrow = String(arOf(p)); else img.style.aspectRatio = String(arOf(p));
+      f.appendChild(img); r.appendChild(f); });
     wrap.appendChild(r);
     const caps = row.phs.map(p => p.caption).filter(Boolean);
     if (caps.length) wrap.appendChild(el('div', 'pcap', caps.join(' · ')));
@@ -241,9 +267,9 @@
 
     const SPRIG = '<svg class="sprig" viewBox="0 0 64 40" fill="none" stroke="COLOR" stroke-width="1.2" stroke-linecap="round"><path d="M32 38V6"/><path d="M32 30c-8-2-14-8-16-16 8 2 14 8 16 16zM32 30c8-2 14-8 16-16-8 2-14 8-16 16zM32 20c-6-2-10-6-12-12 6 2 10 6 12 12zM32 20c6-2 10-6 12-12-6 2-10 6-12 12z"/></svg>';
     const sprig = (color) => { const t = document.createElement('template'); t.innerHTML = SPRIG.replace('COLOR', color); return t.content.firstChild; };
-    const frame = (p) => { p.appendChild(el('div', 'frame')); return p; };
-    const photoPage = (ph, title) => {   // full-bleed photo with an ivory caption plate
-      const p = page('photo'); const g = el('div', 'photo-pg');
+    const frame = (p) => { if (D().frame) p.appendChild(el('div', 'frame')); return p; };
+    const photoPage = (ph, title) => {   // full-bleed photo with a caption plate (ivory; black in a dark design)
+      const p = page('photo' + (D().dark ? ' dark' : '')); const g = el('div', 'photo-pg');
       const img = el('img'); img.src = ph.url; img.alt = ph.caption || ''; g.appendChild(img);
       const plate = el('div', 'plate'); if (title) plate.appendChild(el('b', null, title)); plate.appendChild(document.createTextNode(ph.caption || '')); g.appendChild(plate);
       p.appendChild(g); return p;
@@ -291,9 +317,18 @@
       const hero = heroOf(ch);
       const fullPage = (f) => { const fp = photoPage(f.photo, f.title); if (f.words) { const plate = fp.querySelector('.plate'); plate.textContent = ''; plate.appendChild(el('b', null, f.title)); plate.appendChild(document.createTextNode(f.words)); } };
       const flushFull = () => { pendingFull.splice(0).forEach(fullPage); };
-      const newPage = () => { flushFull(); p = frame(page()); inner = el('div', 'inner'); p.appendChild(inner); };
+      // Leaving a page in a filling design: a photo row at its foot is stretched to the bottom
+      // edge (cropping a little more) so the page ends on the photo rather than on a gap.
+      const finishPage = () => {
+        if (!p || !D().fill || !inner) return;
+        const last = inner.lastElementChild; if (!last || !last.classList.contains('pset')) return;
+        const room = spare(); if (room < 0.5) return;
+        const r = last.querySelector('.prow'); const h = parseFloat(r.style.height) + room + (last.querySelector('.pcap') ? 0 : PAD_B);
+        r.style.height = h.toFixed(2) + 'cqw'; if (!last.querySelector('.pcap')) last.classList.add('bottom');
+      };
+      const newPage = () => { finishPage(); flushFull(); p = frame(page()); inner = el('div', 'inner'); p.appendChild(inner); };
       const openerPage = () => {           // full-bleed hero with the chapter title set over its foot
-        const pg = page('photo opener'); const g = el('div', 'photo-pg');
+        const pg = page('photo opener' + (D().dark ? ' dark' : '')); const g = el('div', 'photo-pg');
         const img = el('img'); img.src = hero.url; img.alt = hero.caption || ''; g.appendChild(img);
         const t = el('div', 'otitle'); t.appendChild(el('div', 'ch', ch.title + (ch.big ? ' · ' + ch.big : ''))); t.appendChild(el('h2', 'h', ch.subtitle || ch.title));
         if (hero.caption) t.appendChild(el('div', 'ocap', hero.caption)); g.appendChild(t); pg.appendChild(g);
@@ -341,16 +376,20 @@
         }
       };
       const cqw = () => p.clientWidth / 100;
+      const PAD_T = 9, PAD_B = 9;                            // .inner padding, in cqw (see book.css)
       const spare = () => (p.clientHeight * 0.985 - inner.getBoundingClientRect().height) / cqw();   // room left on the page, in cqw
       const tryAdd = (node) => { if (!p) newPage(); inner.appendChild(node); if (fits(p)) return true; inner.removeChild(node); return false; };
       const add = (node) => { if (!tryAdd(node)) { newPage(); inner.appendChild(node); } };
+      const topRow = (row, h) => {                           // a row that opens a page in a bleeding design runs off the top edge too
+        const n = rowNode(row, h); if (D().bleed && inner && !inner.childElementCount) { n.classList.add('top'); n.querySelector('.prow').style.height = ((h || row.h) + PAD_T).toFixed(2) + 'cqw'; } return n;
+      };
       const addRow = (row) => {
-        if (tryAdd(rowNode(row))) return;
-        if (p) {                                              // shrink the row into the space that is left, within reason
-          const room = spare() - 4.5;
-          for (const h of [room, room * 0.92]) if (h >= 22 && h >= row.h * 0.45 && tryAdd(rowNode(row, h))) return;
+        if (tryAdd(topRow(row))) return;
+        if (p) {                                              // shrink the row into the space that is left, within reason (further when it crops)
+          const room = spare() - 4.5, min = D().crop ? 15 : 22, keep = D().crop ? 0.3 : 0.45;
+          for (const h of [room, room * 0.92]) if (h >= min && h >= row.h * keep && tryAdd(topRow(row, h))) return;
         }
-        newPage(); inner.appendChild(rowNode(row));
+        newPage(); inner.appendChild(topRow(row));
       };
       const pullQuote = (e) => {   // a quote set into the flow of the page rather than on a page of its own
         const q = el('div', 'pull'); q.appendChild(el('blockquote', null, e.body)); if (e.cite) q.appendChild(el('cite', null, e.cite)); return q;
@@ -413,7 +452,7 @@
         partitionRows(normals).forEach(addRow);
         fulls.forEach(photo => pendingFull.push({ photo, title: e.title }));
       });
-      flushFull();
+      finishPage(); flushFull();
     });
 
     // closing

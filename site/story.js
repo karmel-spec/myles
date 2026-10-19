@@ -32,13 +32,13 @@ window.MYLES_STORY = {
     ],
     team: 'Midwife, Nurse Kendra, Megan the respiratory therapist and the care team, with Dr. Hill on standby.',
     visitors: 'Uncle Thayne, Grandpa Larson, Louis and JoJo, then the whole White family at six.',
-    coverPhoto: { url: 'photos/061.jpg', caption: 'Beau, Abby and Myles, minutes old' },   // the frontispiece; a cover photo saved in the app wins
+    coverPhoto: { url: 'photos/063.jpg', caption: 'Beau, Abby and Myles, minutes old' },   // the frontispiece; a cover photo saved in the app wins
   },
 
   chapters: [
     // hero: the photo that opens the chapter, full bleed, with the title set over it
     { id: 'before',   sort: 0, title: 'The Night Before',     subtitle: 'A rodeo, a football game, and packed camera bags', big: 'Friday',
-      hero: { url: 'photos/001.jpg', caption: 'Room 115, waiting' } },
+      hero: { url: 'photos/061.jpg', caption: 'Beau, Abby and Myles Bryant White' } },
     { id: 'early',    sort: 1, title: 'Early Morning',        subtitle: 'The waters break and settling in', big: '4:51',
       hero: { url: 'photos/004.jpg', caption: 'Settled in, still smiling' } },
     { id: 'labor',    sort: 2, title: 'Active Labor',         subtitle: 'Teamwork in Room 115',             big: '7:00',
@@ -216,6 +216,7 @@ window.MYLES_STORY = {
   // belongs to. size: 'full' is a page of its own, 'small' a detail shot; else the book sizes it.
   // (Photos added in the app are stored on the live site and shown alongside these.)
   photos: {
+    'e-arrive':   [{ url: 'photos/001.jpg', caption: 'Room 115, waiting', size: 'small' }],
     'e-settle2':  [{ url: 'photos/003.jpg', caption: 'Still laughing between contractions' }],
     'e-0800':     [{ url: 'photos/024.jpg', caption: 'Grandma, at the foot of the bed' }],
     'e-0806':     [{ url: 'photos/007.jpg', caption: 'Beau brushing her hair' }],
