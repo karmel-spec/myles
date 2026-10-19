@@ -36,9 +36,11 @@ window.MYLES_STORY = {
   },
 
   chapters: [
-    // hero: the photo that opens the chapter, full bleed, with the title set over it
+    // hero: the photo that opens the chapter, full bleed, with the title set over it.
+    //   at: where the title sits: 'bl' (default, lower left), or 'band' (a full-width band along the foot)
+    //   focus: which part of the photo to keep when it is cropped to the page (CSS object-position)
     { id: 'before',   sort: 0, title: 'The Night Before',     subtitle: 'A rodeo, a football game, and packed camera bags', big: 'Friday',
-      hero: { url: 'photos/061.jpg', caption: 'Beau, Abby and Myles Bryant White' } },
+      hero: { url: 'photos/061.jpg', caption: 'Beau, Abby and Myles Bryant White', at: 'band', focus: '50% 75%' } },
     { id: 'early',    sort: 1, title: 'Early Morning',        subtitle: 'The waters break and settling in', big: '4:51',
       hero: { url: 'photos/004.jpg', caption: 'Settled in, still smiling' } },
     { id: 'labor',    sort: 2, title: 'Active Labor',         subtitle: 'Teamwork in Room 115',             big: '7:00',

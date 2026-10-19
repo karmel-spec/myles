@@ -117,8 +117,8 @@
     state.chapters.forEach(ch => {
       const sec = el('section', 'ch');
       const hero = heroOf(ch);
-      const head = el('div', 'ch-head' + (hero ? ' hero' : '')); head.dataset.id = 'ch:' + ch.id;   // data-id: a stable handle for deep links and mark-up
-      if (hero) { const img = el('img'); img.src = hero.url; img.alt = hero.caption || ''; img.loading = 'lazy'; head.appendChild(img); }
+      const head = el('div', 'ch-head' + (hero ? ' hero' : '') + (hero && hero.at ? ' ' + hero.at : '')); head.dataset.id = 'ch:' + ch.id;   // data-id: a stable handle for deep links and mark-up
+      if (hero) { const img = el('img'); img.src = hero.url; img.alt = hero.caption || ''; img.loading = 'lazy'; if (hero.focus) img.style.objectPosition = hero.focus; head.appendChild(img); }
       const txt = el('div', 'ch-txt');
       txt.appendChild(el('div', 'eyebrow', ch.title + (ch.big ? ' · ' + ch.big : '')));
       txt.appendChild(el('h2', null, ch.subtitle || ch.title));
@@ -331,8 +331,8 @@
       const newPage = () => { finishPage(); flushFull(); p = frame(page()); inner = el('div', 'inner'); p.appendChild(inner); };
       const openerPage = () => {           // full-bleed hero with the chapter title set over its foot
         const pg = page('photo opener' + (D().dark ? ' dark' : '')); const g = el('div', 'photo-pg');
-        const img = el('img'); img.src = hero.url; img.alt = hero.caption || ''; g.appendChild(img);
-        const t = el('div', 'otitle'); t.appendChild(el('div', 'ch', ch.title + (ch.big ? ' · ' + ch.big : ''))); t.appendChild(el('h2', 'h', ch.subtitle || ch.title));
+        const img = el('img'); img.src = hero.url; img.alt = hero.caption || ''; if (hero.focus) img.style.objectPosition = hero.focus; g.appendChild(img);
+        const t = el('div', 'otitle' + (hero.at ? ' ' + hero.at : '')); t.appendChild(el('div', 'ch', ch.title + (ch.big ? ' · ' + ch.big : ''))); t.appendChild(el('h2', 'h', ch.subtitle || ch.title));
         if (hero.caption) t.appendChild(el('div', 'ocap', hero.caption)); g.appendChild(t); pg.appendChild(g);
       };
       // Abby's journal: a kicker, the passage's title, then the words with a drop cap, flowed
