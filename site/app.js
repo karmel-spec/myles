@@ -20,8 +20,9 @@
   }
   function merge() {
     const chs = new Map(SEED.chapters.map(c => [c.id, Object.assign({ photos: [] }, c)]));
-    state.db.chapters.forEach(r => chs.set(r.id, { id: r.id, title: r.title, subtitle: r.subtitle, big: r.big, sort: Number(r.sort) || 0, deleted: !!r.deleted }));
-    const ens = new Map(SEED.entries.map(e => [e.id, Object.assign({ kind: 'moment', photos: [], cite: '' }, e)]));
+    state.db.chapters.forEach(r => chs.set(r.id, Object.assign({}, chs.get(r.id) || {}, { id: r.id, title: r.title, subtitle: r.subtitle, big: r.big, sort: Number(r.sort) || 0, deleted: !!r.deleted })));
+    // the timeline (entries) and Abby's journal (journal) are one list, placed by chapter and sort
+    const ens = new Map(SEED.entries.concat(SEED.journal || []).map(e => [e.id, Object.assign({ kind: 'moment', photos: (SEED.photos || {})[e.id] || [], cite: '' }, e)]));
     state.db.entries.forEach(r => ens.set(r.id, dbToEntry(r)));
     state.book = Object.assign({}, SEED.book);
     const cover = ens.get('cover'); if (cover && !cover.deleted && cover.photos[0]) state.book.coverPhoto = cover.photos[0];
@@ -67,6 +68,7 @@
     $('#import-album').hidden = state.mode !== 'live';
     $('#add-chapter').hidden = state.mode !== 'live';
     $('#edit-facts').hidden = state.mode !== 'live';
+    $('#review-photos').hidden = state.mode !== 'live';
     $('#edit-cover-l').hidden = state.mode !== 'live';
     if (state.mode === 'live') setStatus('Tap any moment to edit it or add photos. Saved for the whole family.');
     else if (state.mode === 'setup') setStatus('This book has no passphrase yet. Pick one and share it with the family; it is needed to read and to add.');
@@ -100,18 +102,38 @@
     return f;
   }
   function pillClass(e) { return /AM|PM/.test(e.time) ? 'pill' : 'pill t'; }
+  const journalBy = (e) => (e.cite || ((state.book.journalBy || 'Abby') + "'s journal"));
+  const paragraphs = (s) => String(s || '').split(/\n\s*\n/).map(x => x.trim()).filter(Boolean);
+  // a chapter's hero: the photo named on the chapter, else the first photo one of its moments marks "full"
+  function heroOf(ch) {
+    if (ch.hero && ch.hero.url) return ch.hero;
+    for (const e of entriesOf(ch.id)) { const f = (e.photos || []).find(p => p.size === 'full'); if (f) return f; }
+    return null;
+  }
 
   /* ---------- Read view ---------- */
   function renderRead() {
     const root = $('#read'); root.innerHTML = '';
     state.chapters.forEach(ch => {
       const sec = el('section', 'ch');
-      const head = el('div', 'ch-head');
-      head.appendChild(el('div', 'eyebrow', ch.title + (ch.big ? ' · ' + ch.big : '')));
-      const h2 = el('h2', null, ch.subtitle || ch.title); head.appendChild(h2);
-      sec.appendChild(head);
+      const hero = heroOf(ch);
+      const head = el('div', 'ch-head' + (hero ? ' hero' : ''));
+      if (hero) { const img = el('img'); img.src = hero.url; img.alt = hero.caption || ''; img.loading = 'lazy'; head.appendChild(img); }
+      const txt = el('div', 'ch-txt');
+      txt.appendChild(el('div', 'eyebrow', ch.title + (ch.big ? ' · ' + ch.big : '')));
+      txt.appendChild(el('h2', null, ch.subtitle || ch.title));
+      head.appendChild(txt); sec.appendChild(head);
       entriesOf(ch.id).forEach(e => {
         const live = state.mode === 'live';
+        if (e.kind === 'journal') {
+          const j = el(live ? 'button' : 'div', 'jn'); if (live) j.type = 'button';
+          j.appendChild(el('div', 'by', journalBy(e) + (e.time ? ' · ' + e.time : '')));
+          if (e.title) j.appendChild(el('h3', null, e.title));
+          paragraphs(e.body).forEach((t, i) => { const p = el('p', i === 0 ? 'first' : null, t); j.appendChild(p); });
+          if (e.photos && e.photos.length) { const ph = el('div', 'ph'); e.photos.forEach(x => { const i = el('img'); i.src = x.url; i.alt = x.caption || ''; i.loading = 'lazy'; if (x.size === 'full' || e.photos.length === 1) i.className = 'wide'; ph.appendChild(i); }); j.appendChild(ph); }
+          if (live) j.addEventListener('click', () => openEditor(e));
+          sec.appendChild(j); return;
+        }
         if (e.kind === 'quote' || e.kind === 'feature') {
           const q = el(live ? 'button' : 'div', 'q' + (e.kind === 'feature' ? ' f' : '')); if (live) q.type = 'button';
           if (e.kind === 'feature') { q.appendChild(el('cite', null, e.time || '')); q.appendChild(el('h3', null, e.title)); q.appendChild(el('p', null, e.body)); }
@@ -123,7 +145,7 @@
         const mo = el(live ? 'button' : 'div', 'mo' + (live ? ' edit' : '') + ((e.body.length + e.title.length) > 170 ? ' long' : '')); if (live) mo.type = 'button';
         mo.appendChild(el('span', pillClass(e), e.time || '·'));
         const p = el('p'); if (e.title) { const b = el('b', null, e.title + ' '); p.appendChild(b); } p.appendChild(document.createTextNode(e.body)); mo.appendChild(p);
-        if (e.photos && e.photos.length) { const ph = el('div', 'ph'); e.photos.forEach(x => { const i = el('img'); i.src = x.url; i.alt = x.caption || ''; i.loading = 'lazy'; ph.appendChild(i); }); mo.appendChild(ph); }
+        if (e.photos && e.photos.length) { const ph = el('div', 'ph'); e.photos.forEach(x => { const i = el('img'); i.src = x.url; i.alt = x.caption || ''; i.loading = 'lazy'; if (x.size === 'full' || e.photos.length === 1) i.className = 'wide'; ph.appendChild(i); }); mo.appendChild(ph); }
         if (live) mo.addEventListener('click', () => openEditor(e));
         sec.appendChild(mo);
       });
@@ -246,7 +268,7 @@
       i.appendChild(el('div', 'rule'));
       const d = el('div', null, b.date + '\n' + b.place); d.style.cssText = 'text-align:center;font:italic 3.1cqw/1.55 var(--body);color:var(--ink-soft);white-space:pre-line'; i.appendChild(d);
       i.appendChild(el('div', 'rule'));
-      const r = el('div', null, 'As witnessed and lovingly recorded by ' + b.recorder); r.style.cssText = 'text-align:center;font:italic 3.1cqw/1.55 var(--body);color:var(--ink-soft)'; i.appendChild(r);
+      const r = el('div', null, 'As witnessed and lovingly recorded by ' + b.recorder + (b.journalBy ? '\nwith pages from ' + b.journalBy + '’s own journal' : '')); r.style.cssText = 'text-align:center;font:italic 3.1cqw/1.55 var(--body);color:var(--ink-soft);white-space:pre-line'; i.appendChild(r);
       p.appendChild(i); }
 
     // arrival facts
@@ -263,11 +285,61 @@
     // chapters: the text flows page to page with the photos set among it. A moment's photos
     // follow its words as rows of mixed size; a single portrait sits beside the words; a photo
     // marked "full" gets its own page, slipped in when the current page is full so the order holds.
+    // A chapter with a hero photo opens magazine-style: the photo full bleed with the title on it.
     state.chapters.forEach(ch => {
       let p = null, inner = null; const pendingFull = [];
+      const hero = heroOf(ch);
       const fullPage = (f) => { const fp = photoPage(f.photo, f.title); if (f.words) { const plate = fp.querySelector('.plate'); plate.textContent = ''; plate.appendChild(el('b', null, f.title)); plate.appendChild(document.createTextNode(f.words)); } };
       const flushFull = () => { pendingFull.splice(0).forEach(fullPage); };
       const newPage = () => { flushFull(); p = frame(page()); inner = el('div', 'inner'); p.appendChild(inner); };
+      const openerPage = () => {           // full-bleed hero with the chapter title set over its foot
+        const pg = page('photo opener'); const g = el('div', 'photo-pg');
+        const img = el('img'); img.src = hero.url; img.alt = hero.caption || ''; g.appendChild(img);
+        const t = el('div', 'otitle'); t.appendChild(el('div', 'ch', ch.title + (ch.big ? ' · ' + ch.big : ''))); t.appendChild(el('h2', 'h', ch.subtitle || ch.title));
+        if (hero.caption) t.appendChild(el('div', 'ocap', hero.caption)); g.appendChild(t); pg.appendChild(g);
+      };
+      // Abby's journal: a kicker, the passage's title, then the words with a drop cap, flowed
+      // sentence by sentence so a long passage runs on to the next page instead of being clipped.
+      const jnNode = (e, cont) => {
+        const n = el('div', 'jn' + (cont ? ' cont' : ''));
+        n.appendChild(el('div', 'kick', cont ? journalBy(e) + ', continued' : journalBy(e) + (e.time ? ' · ' + e.time : '')));
+        if (!cont && e.title) n.appendChild(el('h3', null, e.title));
+        return n;
+      };
+      const flowJournal = (e) => {
+        const sentences = (par) => {   // split after . ! ? (plus closing quotes) only when a space follows, so "4.5 cm" and "10cm!" hold together
+          const out = []; const re = /[\s\S]*?[.!?]+[”’")\]]*(?:\s+|$)/g; let m, last = 0;
+          while ((m = re.exec(par)) && m[0]) { out.push(m[0]); last = re.lastIndex; }
+          if (last < par.length) out.push(par.slice(last));
+          return out.length ? out : [par];
+        };
+        const units = []; paragraphs(e.body).forEach((par, pi) => sentences(par).forEach((s, si) => units.push({ s, newPara: si === 0 && pi > 0 })));
+        let i = 0, started = false, moved = false;
+        while (i < units.length) {
+          if (!p) newPage();
+          const node = jnNode(e, started); inner.appendChild(node);
+          const from = i;
+          let para = el('p', started ? null : 'first'); node.appendChild(para); let placed = 0;
+          while (i < units.length) {
+            const u = units[i];
+            if (u.newPara && para.textContent) { para = el('p'); node.appendChild(para); }
+            para.textContent += u.s;
+            if (fits(p)) { i++; placed++; continue; }
+            para.textContent = para.textContent.slice(0, -u.s.length);
+            if (!para.textContent && node.querySelectorAll('p').length > 1) node.removeChild(para);
+            break;
+          }
+          if (!placed) {
+            inner.removeChild(node);
+            if (inner.querySelector('.jn, .row, .side, .pull, .pset')) { newPage(); continue; }   // the page was already partly used: try a fresh one
+            inner.appendChild(node); para.textContent = units[i].s; i++;                           // a sentence taller than a page: let it through
+          } else if (!started && !moved && i < units.length && placed < 3 && inner.querySelector('.jn, .row, .side, .pull, .pset')) {
+            inner.removeChild(node); i = from; moved = true; newPage(); continue;                  // no orphaned title with a line or two at the foot of a page
+          }
+          started = true;
+          if (i < units.length) newPage();
+        }
+      };
       const cqw = () => p.clientWidth / 100;
       const spare = () => (p.clientHeight * 0.985 - inner.getBoundingClientRect().height) / cqw();   // room left on the page, in cqw
       const tryAdd = (node) => { if (!p) newPage(); inner.appendChild(node); if (fits(p)) return true; inner.removeChild(node); return false; };
@@ -295,16 +367,27 @@
         if (ph.caption) f.appendChild(el('figcaption', null, ph.caption)); row.appendChild(f); return row;
       };
 
-      newPage();
-      inner.appendChild(el('div', 'ch', ch.title));
-      inner.appendChild(el('h2', 'h', ch.subtitle || ch.title));
-      inner.appendChild(el('div', 'rule'));
+      if (hero) { openerPage(); p = null; }
+      else {
+        newPage();
+        inner.appendChild(el('div', 'ch', ch.title + (ch.big ? ' · ' + ch.big : '')));
+        inner.appendChild(el('h2', 'h', ch.subtitle || ch.title));
+        inner.appendChild(el('div', 'rule'));
+      }
 
       entriesOf(ch.id).forEach(e => {
-        const photos = e.photos || [];
+        const photos = (e.photos || []).filter(x => x !== hero);   // the hero is already the opener
         if (e.kind === 'quote') {
           add(pullQuote(e));
           partitionRows(photos).forEach(addRow);
+          return;
+        }
+        if (e.kind === 'journal') {
+          flowJournal(e);
+          const fulls = photos.filter(x => x.size === 'full'), rest = photos.filter(x => x.size !== 'full');
+          chunk(rest.filter(x => x.size === 'small'), 4).forEach(phs => addRow({ phs, h: Math.min(rowHeight(phs), SMALL_MAX) }));
+          partitionRows(rest.filter(x => x.size !== 'small')).forEach(addRow);
+          fulls.forEach(photo => pendingFull.push({ photo, title: e.title }));
           return;
         }
         if (e.kind === 'feature') {
@@ -336,10 +419,10 @@
     // closing
     { const p = frame(page('end')); const i = el('div', 'inner');
       i.appendChild(sprig('#8a9a7b'));
-      i.appendChild(el('div', 'ch', 'Day one of ' + b.name + "'s story"));
+      i.appendChild(el('div', 'ch', 'The first days of ' + b.name + "'s story"));
       i.appendChild(el('h2', 'h', 'To be continued'));
       i.appendChild(el('div', 'rule'));
-      i.appendChild(el('div', 'sub', 'Recorded in Room 115 by ' + b.recorder + '. The next chapters are Abby\'s to write.')); p.appendChild(i); }
+      i.appendChild(el('div', 'sub', 'Recorded in Room 115 by ' + b.recorder + (b.journalBy ? ', with ' + b.journalBy + '’s journal' : '') + '. The next chapters are theirs to write.')); p.appendChild(i); }
 
     // cover handling, even page count, recto/verso sheets
     const size = SIZES[sizeKey];
@@ -351,7 +434,7 @@
     [...root.children].forEach((pg, n) => {
       const pageNo = size.coverSeparate ? n + 1 : n;           // Blurb: first inside page is page 1 (recto)
       const recto = pageNo % 2 === 1;
-      if (pageNo > 0 && !/quote|end|blank|photo|ded|feature/.test(pg.className)) pg.appendChild(el('div', 'folio', '· ' + pageNo + ' ·'));
+      if (pageNo > 0 && !/quote|end|blank|photo|ded|feature|opener/.test(pg.className)) pg.appendChild(el('div', 'folio', '· ' + pageNo + ' ·'));
       const leaf = el('div', 'leaf ' + (recto ? 'recto' : 'verso')); root.replaceChild(leaf, pg); leaf.appendChild(pg);
     });
     const n = root.children.length;
@@ -372,13 +455,19 @@
     editing = { entry: e, isNew };
     $('#sh-title').textContent = isNew ? 'Add a moment' : 'Edit this moment';
     const sel = $('#f-chapter'); sel.innerHTML = ''; state.chapters.forEach(c => { const o = el('option', null, c.title); o.value = c.id; sel.appendChild(o); }); sel.value = e.chapter;
-    $('#f-kind').value = ['quote', 'feature'].includes(e.kind) ? e.kind : 'moment';
+    $('#f-kind').value = ['quote', 'feature', 'journal'].includes(e.kind) ? e.kind : 'moment';
     $('#f-time').value = e.time; $('#f-sort').value = e.sort; $('#f-title').value = e.title; $('#f-body').value = e.body; $('#f-cite').value = e.cite;
     $('#f-delete').hidden = isNew; $('#f-err').textContent = '';
     renderPhotoList(); kindChanged();
     dlg.showModal();
   }
-  function kindChanged() { const q = $('#f-kind').value === 'quote'; $('#l-cite').hidden = !q; $('#l-title').hidden = q; }
+  function kindChanged() {
+    const k = $('#f-kind').value; const q = k === 'quote', j = k === 'journal';
+    $('#l-cite').hidden = !q && !j; $('#l-title').hidden = q;
+    $('#l-cite').firstChild.textContent = j ? 'Whose journal (blank for ' + (state.book.journalBy || 'Abby') + ')' : 'Who said it';
+    $('#f-cite').placeholder = j ? "Beau's journal" : 'Abby · 2:03 PM';
+    $('#f-body').placeholder = j ? 'The passage, in her words. A blank line starts a new paragraph.' : 'What happened';
+  }
   $('#f-kind').addEventListener('change', kindChanged);
 
   function renderPhotoList() {
@@ -502,6 +591,7 @@
         let at = null; const mins = labelMinutes(e.time), day = labelDay(e.time);
         if (day) at = day.getTime() + (12 * 60) * 60000;
         else if (mins != null) at = (chDay || b).getTime() + mins * 60000;
+        else if (chDay && !sameDay(new Date(last), chDay)) at = chDay.getTime();   // first untimed moment of a later day starts that day
         else at = last;
         last = at; out.push({ entry: e, at });
       });
@@ -556,6 +646,24 @@
     return skipped;
   }
 
+  // Photos already in the book, fingerprinted once per sweep, so a re-import of an album (or
+  // the same shot from a phone) is flagged instead of placed twice. Album imports keep a small
+  // copy next to the full one ("-s"); the full photo is read when there is no small copy.
+  const thumbOf = (url) => /^\/photo\//.test(url) ? url.replace(/\.(\w+)$/, '-s.$1') : url;
+  async function existingFingerprints() {
+    const out = [];
+    for (const e of state.entries) for (const ph of (e.photos || [])) {
+      let fp = null; try { fp = await fingerprint(thumbOf(ph.url)); } catch (x) { try { fp = await fingerprint(ph.url); } catch (y) { fp = null; } }
+      if (fp) out.push({ entry: e, photo: ph, fp });
+    }
+    return out;
+  }
+  async function flagInBook(list) {
+    const ex = await existingFingerprints(); let n = 0;
+    list.forEach(ph => { if (ph.dup || !ph.fp) return; const hit = ex.find(x => hamming(x.fp.hash, ph.fp.hash) <= 10); if (hit) { ph.dup = true; ph.inBook = hit.entry; n++; } });
+    return n;
+  }
+
   const pdlg = $('#psheet');
   let placing = [];
   $('#bulk-file').addEventListener('change', async (ev) => {
@@ -573,18 +681,20 @@
       }
       placing.sort((a, b) => (a.when ? a.when.getTime() : 0) - (b.when ? b.when.getTime() : 0));
       setStatus('Checking for duplicate shots…'); await dedupe(placing);
+      setStatus('Checking against the photos already in the book…'); await flagInBook(placing);
       openPlacer();
     } catch (e) { setStatus(e.message || String(e)); }
     lbl.classList.remove('busy'); if (state.mode === 'live' && !placing.length) syncChrome();
   });
+  const entryLabel = (e) => { const ch = state.chapters.find(c => c.id === e.chapter); return (ch ? ch.title + ' · ' : '') + (e.time ? e.time + ' · ' : '') + (e.title || e.body.slice(0, 40)); };
   function openPlacer() {
     const list = $('#ps-list'); list.innerHTML = ''; $('#ps-err').textContent = '';
-    const dups = placing.filter(p => p.dup).length;
-    $('#ps-note').textContent = dups ? dups + (dups === 1 ? ' near-duplicate shot is' : ' near-duplicate shots are') + ' skipped in favor of the sharpest; tap Keep on any you want anyway.' : '';
+    const dups = placing.filter(p => p.dup && !p.inBook).length, inBook = placing.filter(p => p.inBook).length;
+    $('#ps-note').textContent = (dups ? dups + (dups === 1 ? ' near-duplicate shot is' : ' near-duplicate shots are') + ' skipped in favor of the sharpest. ' : '') + (inBook ? inBook + (inBook === 1 ? ' photo is' : ' photos are') + ' already in the book and skipped. ' : '') + (dups || inBook ? 'Tap Keep on any you want anyway.' : '');
     placing.forEach((ph, i) => {
       const row = el('div', 'ps' + (ph.dup ? ' dup' : '')); const img = el('img'); img.src = ph.thumb; img.alt = ''; row.appendChild(img);
       const when = el('div', 'when', fmtWhen(ph.when)); row.appendChild(when);
-      if (ph.dup) { const k = el('button', 'btn keep', 'Duplicate · skipped. Keep?'); k.type = 'button'; k.addEventListener('click', () => { ph.dup = false; row.classList.remove('dup'); k.remove(); }); when.appendChild(k); }
+      if (ph.dup) { const k = el('button', 'btn keep', ph.inBook ? 'Already in the book (' + entryLabel(ph.inBook) + '). Keep?' : 'Duplicate · skipped. Keep?'); k.type = 'button'; k.addEventListener('click', () => { ph.dup = false; ph.inBook = null; row.classList.remove('dup'); k.remove(); }); when.appendChild(k); }
       const sel = el('select'); sel.id = 'ps-sel-' + i;
       state.chapters.forEach(ch => { const og = el('optgroup'); og.label = ch.title;
         entriesOf(ch.id).forEach(e => { const o = el('option', null, (e.time ? e.time + ' · ' : '') + (e.title || e.body.slice(0, 40))); o.value = e.id; og.appendChild(o); });
@@ -621,8 +731,9 @@
       }
       placing.sort((x, y) => (x.when ? x.when.getTime() : 0) - (y.when ? y.when.getTime() : 0));
       $('#a-err').textContent = 'Checking for duplicate shots…'; const dups = await dedupe(placing);
+      $('#a-err').textContent = 'Checking against the photos already in the book…'; const inBook = await flagInBook(placing);
       adlg.close(); $('#a-err').textContent = '';
-      setStatus(placing.length + ' photos copied' + (videos ? ', ' + videos + ' video' + (videos === 1 ? '' : 's') + ' left out' : '') + (dups ? ', ' + dups + ' duplicate' + (dups === 1 ? '' : 's') + ' skipped' : '') + (failed ? ', ' + failed + ' could not be copied' : '') + '.');
+      setStatus(placing.length + ' photos copied' + (videos ? ', ' + videos + ' video' + (videos === 1 ? '' : 's') + ' left out' : '') + (dups ? ', ' + dups + ' duplicate' + (dups === 1 ? '' : 's') + ' skipped' : '') + (inBook ? ', ' + inBook + ' already in the book' : '') + (failed ? ', ' + failed + ' could not be copied' : '') + '.');
       if (placing.length) openPlacer(); else if (!videos && !failed) setStatus('No photos found in that album.');
     } catch (e) { $('#a-err').textContent = e.message || String(e); }
     $('#a-go').disabled = false;
@@ -647,6 +758,40 @@
       merge(); renderAll(); pdlg.close(); placing = []; syncChrome();
     } catch (err) { $('#ps-err').textContent = err.message || String(err); }
     $('#ps-save').disabled = false;
+  });
+
+  // review every photo in the book on one screen: tap a photo to mark it for removal, save once
+  const rdlg = $('#rsheet');
+  let culling = [];
+  $('#review-photos').addEventListener('click', () => {
+    const grid = $('#rs-grid'); grid.innerHTML = ''; $('#rs-err').textContent = ''; culling = [];
+    state.chapters.forEach(ch => entriesOf(ch.id).forEach(e => (e.photos || []).forEach((ph, i) => {
+      const it = { entry: e, index: i, remove: false };
+      const cell = el('button', 'rc'); cell.type = 'button'; const img = el('img'); img.src = thumbOf(ph.url); img.alt = ''; img.loading = 'lazy';
+      img.addEventListener('error', () => { if (img.src !== ph.url) img.src = ph.url; }, { once: true }); cell.appendChild(img);
+      cell.appendChild(el('span', 'lbl', entryLabel(e))); cell.appendChild(el('span', 'x', 'Remove'));
+      cell.addEventListener('click', () => { it.remove = !it.remove; cell.classList.toggle('out', it.remove); $('#rs-count').textContent = culling.filter(c => c.remove).length + ' marked'; });
+      culling.push(it); grid.appendChild(cell);
+    })));
+    $('#rs-count').textContent = culling.length ? '0 marked' : 'No photos in the book yet.';
+    rdlg.showModal();
+  });
+  $('#rs-cancel').addEventListener('click', () => rdlg.close());
+  $('#rsheetform').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const byEntry = new Map(); culling.filter(c => c.remove).forEach(c => { if (!byEntry.has(c.entry.id)) byEntry.set(c.entry.id, new Set()); byEntry.get(c.entry.id).add(c.index); });
+    if (!byEntry.size) { rdlg.close(); return; }
+    $('#rs-err').textContent = 'Removing…'; $('#rs-save').disabled = true;
+    try {
+      for (const [id, idx] of byEntry) {
+        const e = JSON.parse(JSON.stringify(state.entries.find(x => x.id === id)));
+        e.photos = (e.photos || []).filter((ph, i) => !idx.has(i));
+        await api({ op: 'save_entry', entry: e });
+        state.db.entries = state.db.entries.filter(r => r.id !== e.id).concat([{ id: e.id, chapter: e.chapter, time_label: e.time, sort: e.sort, kind: e.kind, title: e.title, body: e.body, cite: e.cite, photos: e.photos, deleted: false }]);
+      }
+      merge(); renderAll(); rdlg.close();
+    } catch (err) { $('#rs-err').textContent = err.message || String(err); }
+    $('#rs-save').disabled = false;
   });
 
   // chapter editor

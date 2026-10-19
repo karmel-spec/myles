@@ -50,19 +50,37 @@ button{cursor:pointer}
 .read .ch-head .eyebrow{font:500 12px/1.4 var(--display);letter-spacing:.3em;text-transform:uppercase;color:var(--brown)}
 .read .ch-head h2{font:500 30px/1.1 var(--display);margin:0;text-wrap:balance}
 .read .ch-head::after{content:"";width:48px;height:1px;background:var(--rule);margin-top:8px}
+/* magazine opener: the chapter's hero photo with the title set over its foot */
+.read .ch-head.hero{position:relative;overflow:hidden;padding:0;margin-bottom:14px;align-items:stretch;text-align:left}
+.read .ch-head.hero::after{display:none}
+.read .ch-head.hero img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
+.read .ch-head.hero .ch-txt{position:absolute;left:0;right:0;bottom:0;padding:90px 18px 20px;background:linear-gradient(to top,rgba(24,19,14,.82),rgba(24,19,14,.45) 55%,rgba(24,19,14,0));display:flex;flex-direction:column;gap:6px}
+.read .ch-head.hero .eyebrow{color:#e7dac4}
+.read .ch-head.hero h2{color:#fff8ea;font-size:34px;text-wrap:balance}
+@media (max-width:700px){.read .ch-head.hero{width:calc(100% + 32px);margin-left:-16px}}
+/* Abby's journal: a kicker, the passage's title, a drop cap, and room to breathe */
+.read .jn{display:block;background:var(--panel);border:0;border-top:1px solid var(--line);padding:22px 18px 18px;text-align:left;width:100%;color:var(--fg)}
+.read .jn .by{font:600 11px/1.4 var(--body);letter-spacing:.24em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.read .jn h3{margin:0 0 10px;font:500 27px/1.12 var(--display);text-wrap:balance}
+.read .jn p{margin:0 0 12px;font-size:17px;line-height:1.55}
+.read .jn p:last-of-type{margin-bottom:0}
+.read .jn p.first::first-letter{font:500 56px/.8 var(--display);float:left;margin:7px 9px 0 0;color:var(--brown)}
+.read .jn .ph{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:14px}
+.read .jn .ph img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
+.read .ph img.wide{grid-column:1/-1;aspect-ratio:auto;height:auto}
 .read .mo{display:grid;grid-template-columns:72px 1fr;gap:14px;align-items:start;background:transparent;border:0;border-top:1px solid var(--line);padding:14px 0;text-align:left;width:100%;color:var(--fg)}
 .read .mo.edit:hover{background:var(--chip)}
 .read .pill{font:600 12px/1.5 var(--display);letter-spacing:.14em;color:var(--accent);text-align:right;padding-top:3px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .read .mo p{margin:0;font-size:17px;line-height:1.5}
 .read .mo p b{font-weight:600;color:var(--brown)}
-.read .mo .ph{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
+.read .mo .ph{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .read .mo .ph img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
 .read .q{background:transparent;border:0;border-top:1px solid var(--line);padding:26px 16px;text-align:center;width:100%;color:var(--fg);display:flex;flex-direction:column;align-items:center;gap:10px}
 .read .q blockquote{margin:0;font:italic 500 26px/1.25 var(--display);text-wrap:balance}
 .read .q cite{font:400 12px/1.5 var(--body);font-style:normal;letter-spacing:.22em;text-transform:uppercase;color:var(--brown)}
 .read .q.f h3{margin:0;font:500 26px/1.15 var(--display)}
 .read .q.f p{margin:0;font:italic 17px/1.5 var(--body);max-width:46ch}
-.read .q .ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;width:100%;margin-top:6px}
+.read .q .ph{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;margin-top:6px}
 .read .q .ph img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
 .read .add{align-self:center;margin-top:10px}
 
@@ -94,8 +112,16 @@ button{cursor:pointer}
 .page .prow img{height:100%;width:auto;max-width:100%;display:block;object-fit:cover}
 .page .pcap{font:italic 2.5cqw/1.35 var(--body);color:var(--ink-soft);text-align:center}
 /* a quote or featured passage set into the page */
-.page .pull{display:flex;flex-direction:column;align-items:center;text-align:center;gap:1.6cqw;padding:2.2cqw 6cqw 2.6cqw;margin:.8cqw 0;border-top:1px solid var(--tan);border-bottom:1px solid var(--tan)}
-.page .pull blockquote{margin:0;font:italic 500 4.2cqw/1.3 var(--display);text-wrap:balance}
+.page .pull{display:flex;flex-direction:column;align-items:center;text-align:center;gap:1.6cqw;padding:2.6cqw 5cqw 3cqw;margin:.8cqw 0;border-top:1px solid var(--tan);border-bottom:1px solid var(--tan)}
+.page .pull blockquote{margin:0;font:italic 500 4.7cqw/1.25 var(--display);text-wrap:balance}
+/* Abby's journal in the book: kicker, title, drop cap; `.cont` carries a passage onto the next page */
+.page .jn{display:flex;flex-direction:column;gap:1.1cqw;padding:1.4cqw 0 .4cqw;border-top:1px solid var(--tan)}
+.page .jn.cont{border-top:0;padding-top:0}
+.page .jn .kick{font:600 2.1cqw/1.5 var(--display);letter-spacing:.28em;text-transform:uppercase;color:var(--sage-deep)}
+.page .jn h3{margin:0;font:500 4.8cqw/1.1 var(--display);text-wrap:balance}
+.page .jn p{margin:0;font:400 2.95cqw/1.5 var(--body);color:var(--ink)}
+.page .jn p + p{margin-top:1.3cqw}
+.page .jn p.first::first-letter{font:500 9.4cqw/.78 var(--display);float:left;margin:1cqw 1.5cqw 0 0;color:var(--brown)}
 .page .pull cite{font:400 2.3cqw/1.6 var(--body);font-style:normal;letter-spacing:.22em;text-transform:uppercase;color:var(--brown);max-width:64cqw}
 .page .pull h3{margin:0;font:500 4.6cqw/1.15 var(--display)}
 .page .pull p{margin:0;font:italic 3cqw/1.5 var(--body);color:var(--ink);max-width:60cqw}
@@ -125,6 +151,13 @@ button{cursor:pointer}
 .page.photo img{width:100%;height:100%;object-fit:cover;display:block;min-height:0}
 .page.photo .plate{padding:4cqw 10cqw 7cqw;text-align:center;font:italic 3cqw/1.5 var(--body);color:var(--ink-soft)}
 .page.photo .plate b{display:block;font:500 3.8cqw/1.3 var(--display);font-style:normal;color:var(--ink);letter-spacing:.02em}
+
+/* chapter opener: hero photo full bleed, title over its foot */
+.page.opener .photo-pg{grid-template-rows:1fr;position:relative}
+.page.opener .otitle{position:absolute;left:0;right:0;bottom:0;padding:30cqw 10cqw 10cqw;background:linear-gradient(to top,rgba(24,19,14,.86) 0%,rgba(24,19,14,.5) 50%,rgba(24,19,14,0) 100%);color:#fff8ea;text-align:left;display:flex;flex-direction:column;gap:1.8cqw}
+.page.opener .otitle .ch{color:#e7dac4;text-align:left}
+.page.opener .otitle .h{text-align:left;color:#fff8ea;font-size:8.2cqw;line-height:1.02}
+.page.opener .ocap{font:italic 2.6cqw/1.4 var(--body);color:#e7dac4}
 
 /* arrival / facts */
 .page .stat{display:grid;grid-template-columns:1fr 1fr;gap:2.6cqw 5cqw;margin-top:1.5cqw}
@@ -176,7 +209,16 @@ dialog.sheet::backdrop{background:rgba(30,25,18,.5)}
 .sheet .ps select,.sheet .ps input{padding:7px 9px;font-size:15px;width:100%}
 .sheet .ps.dup img{opacity:.45}
 .sheet .ps.dup select,.sheet .ps.dup input{display:none}
-.sheet .ps .keep{margin-left:8px;padding:4px 10px;font-size:12px}
+.sheet .ps .keep{margin-left:8px;padding:4px 10px;font-size:12px;white-space:normal;text-align:left}
+dialog.sheet.wide{max-width:min(96vw,860px)}
+.sheet .rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:60vh;overflow:auto;padding:2px}
+.sheet .rc{appearance:none;border:2px solid transparent;background:var(--chip);padding:0;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;text-align:left;position:relative}
+.sheet .rc img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.sheet .rc .lbl{font:400 11px/1.3 var(--body);color:var(--muted);padding:5px 6px 6px;min-height:34px}
+.sheet .rc .x{position:absolute;top:6px;right:6px;background:#9a3b2e;color:#fff;font:600 11px/1 var(--body);letter-spacing:.06em;padding:4px 7px;border-radius:999px;display:none}
+.sheet .rc.out{border-color:#9a3b2e}
+.sheet .rc.out img{opacity:.35}
+.sheet .rc.out .x{display:block}
 
 /* ---- print ---- */
 @media print{

@@ -32,6 +32,7 @@
     <button class="btn" type="button" id="add-moment" hidden>+ Moment</button>
     <button class="btn" type="button" id="add-chapter" hidden>+ Chapter</button>
     <button class="btn" type="button" id="edit-facts" hidden>Birth facts</button>
+    <button class="btn" type="button" id="review-photos" hidden>Review photos</button>
     <label class="btn filebtn" id="edit-cover-l" hidden>Cover photo<input id="edit-cover" type="file" accept="image/*" hidden></label>
     <button class="btn" type="button" id="btn-lock" hidden>Lock</button>
   </div>
@@ -62,7 +63,7 @@
     <h3 id="sh-title">Edit this moment</h3>
     <div class="row">
       <label>Chapter<select id="f-chapter"></select></label>
-      <label>Kind<select id="f-kind"><option value="moment">Moment</option><option value="feature">Featured page (own page, photo full bleed)</option><option value="quote">Quote page</option></select></label>
+      <label>Kind<select id="f-kind"><option value="moment">Moment (timeline)</option><option value="journal">Journal passage (Abby's words)</option><option value="feature">Featured page (own page, photo full bleed)</option><option value="quote">Quote page</option></select></label>
     </div>
     <div class="row">
       <label>Time or date<input id="f-time" placeholder="4:51 AM or Oct 12"></label>
@@ -105,6 +106,16 @@
     <div class="plist" id="ps-list"></div>
     <div class="err" id="ps-err"></div>
     <div class="actions"><span class="sp"></span><button class="btn" type="button" id="ps-cancel">Cancel</button><button class="btn p" type="submit" id="ps-save">Place photos</button></div>
+  </form>
+</dialog>
+
+<dialog class="sheet wide" id="rsheet">
+  <form id="rsheetform" method="dialog">
+    <h3>Review the photos</h3>
+    <p class="note">Every photo in the book, in order. Tap one to mark it for removal, then save. Captions and sizes are edited on the moment itself.</p>
+    <div class="rgrid" id="rs-grid"></div>
+    <div class="err" id="rs-err"></div>
+    <div class="actions"><span class="note" id="rs-count"></span><span class="sp"></span><button class="btn" type="button" id="rs-cancel">Cancel</button><button class="btn d" type="submit" id="rs-save">Remove marked</button></div>
   </form>
 </dialog>
 

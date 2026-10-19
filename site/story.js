@@ -1,8 +1,10 @@
 // The Birth of Myles Bryant White — the story as shipped with the book.
-// As witnessed and lovingly recorded by his grandma, Karmel Larson.
+// Two voices: the minute-by-minute timeline as witnessed and recorded by his
+// grandma, Karmel Larson (entries), and Abby's own journal of the three days,
+// set into the timeline at the moments it describes (journal).
 //
 // Everything here can be edited from the app; an edited moment is saved to
-// Supabase under the same id and wins over this copy. Keep ids stable.
+// the site's store under the same id and wins over this copy. Keep ids stable.
 
 window.MYLES_STORY = {
   book: {
@@ -10,6 +12,7 @@ window.MYLES_STORY = {
     fullName: 'Myles Bryant White',
     parents: 'Beau and Abby White',
     recorder: 'his Grandma, Karmel Larson',
+    journalBy: 'Abby',          // whose journal the journal passages come from
     date: 'Saturday, October 10, 2026',
     dateISO: '2026-10-10',
     dateShort: 'October 10, 2026',
@@ -19,24 +22,37 @@ window.MYLES_STORY = {
     bornAmPm: 'PM',
     facts: [
       { label: 'Born at', value: '1:17', note: 'in the afternoon', tone: 'sage' },
+      { label: 'Weight', value: '7 lb 10 oz', note: 'of pure joy' },
+      { label: 'Length', value: '19¾ in', note: 'strong arms, held his head up' },
+      { label: 'Pushing', value: '17 min', note: 'at record-breaking speed', tone: 'sage' },
       { label: 'Apgar', value: '8 · 9', note: 'points lost only for color' },
       { label: 'Room', value: '115', note: 'Orem Community Hospital' },
-      { label: "Dad's guess", value: '1:13', note: 'four minutes off', tone: 'sage' },
-      { label: 'Mom\'s guess', value: '2:30', note: 'he came early' },
-      { label: 'Weight guesses', value: '7-8 · 7-11', note: "Abby's guess was Beau's exact birth weight" , tone: 'sage'},
+      { label: 'Time guesses', value: '1:13 · 2:30', note: "Beau was four minutes off; Abby's guess, he beat", tone: 'sage' },
+      { label: 'Weight guesses', value: '7-8 · 7-11', note: "Abby's guess was Beau's exact birth weight" },
     ],
-    team: 'Midwife, Nurse Kendra and the care team, with Dr. Hill on standby.',
+    team: 'Midwife, Nurse Kendra, Megan the respiratory therapist and the care team, with Dr. Hill on standby.',
     visitors: 'Uncle Thayne, Grandpa Larson, Louis and JoJo, then the whole White family at six.',
-    coverPhoto: null,   // {url, caption}
+    coverPhoto: { url: 'photos/061.jpg', caption: 'Beau, Abby and Myles, minutes old' },   // the frontispiece; a cover photo saved in the app wins
   },
 
   chapters: [
-    { id: 'early',    sort: 1, title: 'Early Morning',        subtitle: 'The waters break and settling in', big: '4:51' },
-    { id: 'labor',    sort: 2, title: 'Active Labor',         subtitle: 'Teamwork in Room 115',             big: '7:00' },
-    { id: 'epidural', sort: 3, title: 'Epidural Relief',      subtitle: 'And the approaching storm',        big: '9:20' },
-    { id: 'complete', sort: 4, title: 'Complete',             subtitle: 'Laboring down and the final stretch', big: '11:46' },
-    { id: 'arrival',  sort: 5, title: 'Myles Arrives',        subtitle: 'Welcome to the world',             big: '1:17' },
+    // hero: the photo that opens the chapter, full bleed, with the title set over it
+    { id: 'before',   sort: 0, title: 'The Night Before',     subtitle: 'A rodeo, a football game, and packed camera bags', big: 'Friday',
+      hero: { url: 'photos/001.jpg', caption: 'Room 115, waiting' } },
+    { id: 'early',    sort: 1, title: 'Early Morning',        subtitle: 'The waters break and settling in', big: '4:51',
+      hero: { url: 'photos/004.jpg', caption: 'Settled in, still smiling' } },
+    { id: 'labor',    sort: 2, title: 'Active Labor',         subtitle: 'Teamwork in Room 115',             big: '7:00',
+      hero: { url: 'photos/014.jpg', caption: 'Over the birth ball, with Beau’s hand on her back' } },
+    { id: 'epidural', sort: 3, title: 'Epidural Relief',      subtitle: 'And the approaching storm',        big: '9:20',
+      hero: { url: 'photos/026.jpg', caption: 'Rest, at last' } },
+    { id: 'complete', sort: 4, title: 'Complete',             subtitle: 'Laboring down and the final stretch', big: '11:46',
+      hero: { url: 'photos/039.jpg', caption: 'Beau, waiting on the midwife' } },
+    { id: 'arrival',  sort: 5, title: 'Myles Arrives',        subtitle: 'Welcome to the world',             big: '1:17',
+      hero: { url: 'photos/053.jpg', caption: '1:17 PM. Straight onto his mother’s chest' } },
     { id: 'evening',  sort: 6, title: 'Welcoming Family',     subtitle: 'Everyone wanted a turn',           big: '5:00' },
+    { id: 'night',    sort: 7, title: 'First Night',          subtitle: 'Just our little family',           big: 'Night' },
+    { id: 'day2',     sort: 8, title: 'October 11',           subtitle: 'A village of visitors',            big: 'Oct 11' },
+    { id: 'home',     sort: 9, title: 'Going Home',           subtitle: 'Here begins our life as a family of three', big: 'Oct 12' },
   ],
 
   entries: [
@@ -193,5 +209,119 @@ window.MYLES_STORY = {
       body: 'The White family arrived to meet their newest grandson and nephew. Uncle Charlie was visibly emotional. Everyone took turns cuddling baby Myles, none of them wanting to let him go.' },
     { id: 'q-1827', chapter: 'evening', sort: 3, time: '6:27 PM', kind: 'quote', title: '',
       body: '"It\'s so fun to see my baby sharing his baby with my other babies!"', cite: 'Rachel, looking around the crowded room · 6:27 PM' },
+  ],
+
+  // ---------- Photos shipped with the book ----------
+  // The professional frames from the birth day, by the id of the moment or passage each one
+  // belongs to. size: 'full' is a page of its own, 'small' a detail shot; else the book sizes it.
+  // (Photos added in the app are stored on the live site and shown alongside these.)
+  photos: {
+    'e-settle2':  [{ url: 'photos/003.jpg', caption: 'Still laughing between contractions' }],
+    'e-0800':     [{ url: 'photos/024.jpg', caption: 'Grandma, at the foot of the bed' }],
+    'e-0806':     [{ url: 'photos/007.jpg', caption: 'Beau brushing her hair' }],
+    'e-0810':     [{ url: 'photos/009.jpg', caption: 'Counter-pressure, standing' }],
+    'j-pickup':   [{ url: 'photos/012.jpg', caption: 'Beau beside her' }, { url: 'photos/013.jpg', caption: 'The birth ball' }],
+    'e-0845':     [{ url: 'photos/010.jpg', caption: 'Breathing through it' }],
+    'e-0849':     [{ url: 'photos/019.jpg', caption: '', size: 'small' }, { url: 'photos/000.jpg', caption: 'Holding on', size: 'small' }],
+    'e-deepblue': [{ url: 'photos/025.jpg', caption: 'The Deep Blue foot rub' }],
+    'j-hardest':  [{ url: 'photos/016.jpg', caption: 'Holding the rail' }],
+    'e-1033':     [{ url: 'photos/028.jpg', caption: 'Nurse Kendra, Grandma on the knees, Beau at her side' }],
+    'e-1040':     [{ url: 'photos/027.jpg', caption: 'The room relaxes' }],
+    'e-monitor':  [{ url: 'photos/032.jpg', caption: 'Myles’s heartbeat', size: 'small' }],
+    'e-1201':     [{ url: 'photos/038.jpg', caption: '' }],
+    'e-1212':     [{ url: 'photos/037.jpg', caption: '' }],
+    'j-wait':     [{ url: 'photos/029.jpg', caption: 'An hour at ten centimeters' }],
+    'j-midwife':  [{ url: 'photos/047.jpg', caption: 'The midwife, finally here' }],
+    'e-1307':     [{ url: 'photos/049.jpg', caption: 'Three pushes a contraction' }, { url: 'photos/046.jpg', caption: '' }, { url: 'photos/052.jpg', caption: 'Almost' }],
+    'e-1317':     [{ url: 'photos/054.jpg', caption: '' }, { url: 'photos/057.jpg', caption: 'Myles Bryant White' }],
+    'j-born':     [{ url: 'photos/056.jpg', caption: 'Beau meets his son', size: 'full' }],
+    'j-megan':    [{ url: 'photos/065.jpg', caption: 'Grandma, filming from the left' }, { url: 'photos/062.jpg', caption: '' }, { url: 'photos/067.jpg', caption: '' }],
+    'e-post':     [{ url: 'photos/070.jpg', caption: 'Skin to skin' }, { url: 'photos/071.jpg', caption: 'Relief' }, { url: 'photos/072.jpg', caption: '' }],
+    'q-1403':     [{ url: 'photos/077.jpg', caption: '' }],
+    'e-1408':     [{ url: 'photos/092.jpg', caption: 'The first lesson' }],
+    'e-1412':     [{ url: 'photos/095.jpg', caption: 'He latched right away', size: 'full' }, { url: 'photos/085.jpg', caption: '' }],
+    'j-nurse':    [{ url: 'photos/086.jpg', caption: '', size: 'full' }, { url: 'photos/080.jpg', caption: '' }],
+    'e-1430':     [{ url: 'photos/083.jpg', caption: 'Grandma meets Myles' }, { url: 'photos/084.jpg', caption: '' }],
+    'e-1500':     [{ url: 'photos/074.jpg', caption: 'Weighed, measured, and loud about it', size: 'small' }],
+    'j-stats':    [{ url: 'photos/097.jpg', caption: 'Swaddled' }],
+    'e-1600':     [{ url: 'photos/090.jpg', caption: 'Asleep on his mother' }],
+    'j-loved':    [{ url: 'photos/094.jpg', caption: 'Beau, the midwife, Abby and Nurse Kendra' }],
+  },
+
+  // ---------- Abby's journal ----------
+  // Her own account of the three days, in her words, set into the timeline at the
+  // moment each passage describes. `sort` places a passage between the timeline
+  // moments of its chapter (the moments use whole numbers). Paragraph breaks are
+  // blank lines; the book flows a long passage across pages sentence by sentence.
+  journal: [
+    { id: 'j-open', chapter: 'before', sort: 1, time: '', kind: 'quote', title: '',
+      body: '“Myles came today and our whole world has been changed forever in the most wonderful way. Nothing can ever compare to the feeling I had today from becoming a parent and meeting our perfect little son!!”', cite: 'Abby · her journal, October 10' },
+    { id: 'j-night', chapter: 'before', sort: 2, time: 'Friday night', kind: 'journal', title: 'The night before',
+      body: "On Friday night, Beau and I went to the UVU rodeo at the Spanish Fork Fairgrounds and then came home to watch the BYU game. We went to bed at 12:30 with no idea what would happen the next day. In fact, we charged all our camera batteries and packed the camera bags in preparation to film Kara & Josh’s wedding the next day." },
+
+    { id: 'j-water', chapter: 'early', sort: 0.5, time: '4:00 AM', kind: 'journal', title: 'Water breaking',
+      body: "At 4am I was woken up by a huge “pop” and gush of fluid and it was so unmistakably my water that I gasped, probably scared Beau awake, and excitedly told him my water just broke! It was a stormy night and later the nurses told us that the change in barometric pressure from storms increases the likelihood of water breaking if you’re already close! Adrenaline kicked in so fast, we both ran around in a shocked/excited stupor packing everything up to go to the hospital and taking last minute videos.\n\nBeau gave me a blessing right before we left and it was one of the most beautiful blessings I’ve ever had. He prayed that angels would be there from both sides of the veil and that we would be prepared to become parents and take care of our little guy." },
+    { id: 'j-mom', chapter: 'early', sort: 1.5, time: '', kind: 'journal', title: 'The phone tree',
+      body: "My mom didn’t answer at first so we called my dad who answered immediately because he had been up all night going to the ER for his rib fracture from playing basketball with the boys. He told mom and she and Rachel arrived soon after with omelet breakfast, baskets of goods for us and thank you baskets for the nurses." },
+    { id: 'j-triage', chapter: 'early', sort: 4.5, time: '5:00 AM', kind: 'journal', title: 'Triage',
+      body: "We arrived at Orem Community Hospital at 5am where they took us to the triage room. At first the nurse was going to do multiple tests with vaginal samples and lab results that take a lot of time but thankfully as soon as I stood up and asked for a pad because I was leaking everywhere she said “oh my, let’s just do this” and stuck a piece of testing paper on the fluid. It immediately turned deep blue and she said, “yep your water definitely broke, let’s just get you into a room!”" },
+    { id: 'j-rachel', chapter: 'early', sort: 4.7, time: '', kind: 'journal', title: 'Calling the Whites',
+      body: "We called Rachel who immediately jumped out of bed and ran around preparing to come. She told Lucy who immediately texted both grandmas and 6 of her friends, then when she told Rocky he shot up out of bed and gasped and said, “OK lets go!!” They all said they wanted to come and just wait in the waiting room. She laughed and said that’s not how it works and they could all come later." },
+    { id: 'j-0530', chapter: 'early', sort: 5.5, time: '5:30 AM', kind: 'journal', title: 'First contractions',
+      body: "By this point, around 5:30 AM I was feeling mild contractions that felt like stomach cramps. I could still walk and talk through them but Rachel said you could tell when I had one because something would change in my eyes." },
+    { id: 'j-kendra', chapter: 'early', sort: 6.5, time: '', kind: 'journal', title: 'Nurse Kendra',
+      body: "Our nurse Kendra was spunky, loud, and outgoing. First she put in my IV then she put on a wireless bluetooth monitor on my belly to track our heart rates and the contractions. All the nurses were very accommodating, asked to review our birth plan and did everything they could to make it happen so I felt very comfortable the whole time!" },
+
+    { id: 'j-pickup', chapter: 'labor', sort: 9.5, time: '8:00 AM', kind: 'journal', title: 'Picking up',
+      body: "Around 7-8 AM the contractions really started to pick up and by 9 AM I had to stop and breathe through each one. I was shocked at how fast they progressed in intensity, I had expected it to be a much more gradual progression. Beau helped so much by applying counter pressure with every contraction and holding me while I breathed. I really enjoyed this part of the labor, it was uncomfortable but manageable and I was so grateful for Beau, mom, and Rachel’s support, the energy in the room was so exhilarating between us 4, and I was happy I could move around freely, walk, dance, and not be stuck in bed. At one point I had a rapid wave of nausea come on and seconds later threw up everything I had eaten. I threw up once more about 30 minutes later any fluid that was left." },
+    { id: 'j-hardest', chapter: 'labor', sort: 19.5, time: '9:00 AM', kind: 'journal', title: 'The hardest part',
+      body: "From 9-10:30 was the hardest part. The contractions were so intense that I couldn’t do anything but breathe and let out deep moans while Beau did counter pressure. They checked me once around 9 and I was only at 4.5-5 cm dilated which felt very discouraging and scary because it made me think I still had hours and hours, possibly even all day left of laboring and the contractions were already getting so intense I didn’t know how much more I could bear. From that point on I especially tried focusing on relaxing during contractions, letting them work and stretch my cervix (which I could FEEL like crazy) rather than fighting them but it was hard. Often the contractions would couple or triple with no break in between and I was really starting to feel completely exhausted. At one point I was laying over the birth ball and felt like I just wanted to crawl/sprawl out on the floor, just the kind of crazy behavior that Beau and I laughed about happening from one of our birth prep videos. That’s when I knew I was ready for the epidural." },
+
+    { id: 'j-epi', chapter: 'epidural', sort: 4.5, time: '10:30 AM', kind: 'journal', title: 'The epidural',
+      body: "We called the anesthesiologist around 10 and he arrived at 10:30. He was really kind and accommodating. I requested a low dose so he gave me 8 mL where he usually gives 10. Getting the epidural was so easy and painless. They asked me if I was feeling burning or tingling in my legs and I said yes, lots but mom was rubbing my legs and feet with icy hot so we didn’t know if it was that or the epidural (poor choice of lotion haha we didn’t know how much it would burn)! She applied counter pressure on my knees during every contraction which helped. And Beau sat next to me the whole time, putting pressure on my back and letting me squeeze his hand. During one contraction I squeezed his hand so hard it hurt and he just laughed through it. He was so worried for me and the baby though, mom caught a video of him pacing back and forth and he told me when it was over how relieved he felt.\n\nI was so exhausted at this point I really don’t remember much, I felt like I was almost going in and out of consciousness a little bit. After about 20 minutes the epidural still didn’t seem to be taking effect so I pressed the button to release more medicine. But after another 20 or so minutes that still wasn’t taking away the pain so the anesthesiologist came in and gave me additional pain killers. At that point my legs started to numb but then it went way farther than I wanted and I couldn’t feel anything. Literally nothing. Pressure, cold, no sensation at all and you could forget about moving at all. I was 100% dead weight from the waist down. But I could tell something serious was happening with my body because I had the shakes and my teeth chattered so bad. Once the epidural took effect they put me on my side with a peanut ball between my legs." },
+
+    { id: 'j-10cm', chapter: 'complete', sort: 3.5, time: '11:00 AM', kind: 'journal', title: 'Ten centimeters',
+      body: "Around 11 AM Kendra told us that the baby's heart beat was staying too stagnant so in order to get more movement from him she did a cervical check to touch the baby's head. I said something like, “hopefully that works, hopefully he likes that!” and she responded, “what I think he’ll really like is to be born because you're 10cm!” We were all SHOCKED it happened so fast, only about 30 minutes after getting the epidural! She said our midwife was at Timpanogos hospital in another delivery but should be here in about 45 minutes to start pushing with me." },
+    { id: 'j-wait', chapter: 'complete', sort: 6.5, time: '', kind: 'journal', title: 'Waiting at ten',
+      body: "So we just sat there for over an hour, at 10cm, waiting for the midwife to arrive! But I think that helped him descend really low into the pelvis." },
+    { id: 'j-midwife', chapter: 'complete', sort: 12.5, time: '1:00 PM', kind: 'journal', title: 'The midwife arrives',
+      body: "At 1:00pm when the midwife arrived she did a cervical check and found that he was facing my front and was a bit cockeyed so she could feel his ear rather than the top of his head. That was the scariest part of the labor, it seemed that if he didn’t move that some serious interventions would be needed. But thankfully Beau talked to him through my belly, the midwife worked some magic, prayers were answered and he rotated! They laid me on my left side and had Beau hold my right leg while they coached me through pushing. Right before we began I prayed my heart out for help and that he would be healthy. They had me bear down, hold my breath, and push with everything I had for 10 seconds, 3 times every contraction. After 3 or so rounds of that they rolled in a mirror so I could see what was happening. It was completely shocking and overwhelming to actually see his head and see each push significantly help him progress." },
+    { id: 'j-touch', chapter: 'complete', sort: 13.5, time: '', kind: 'journal', title: 'Touching his head',
+      body: "The most emotional part yet was when I touched his head. It was as if a locked chamber in my heart burst open and all this love and care and adoration flowed in so rapidly I was completely overcome. It was like I knew he was real but actually feeling him made it SO real." },
+
+    { id: 'j-born', chapter: 'arrival', sort: 1.5, time: '1:17 PM', kind: 'journal', title: 'He was out',
+      body: "Everything from that point on was a blur. I pushed once more, they had me slow down when he was crowning, then one more big push and he was out! In only 17 minutes of pushing! His cry was so precious, they said he was trying to cry before he was even out so he had fluid in his airway. He also had the cord wrapped twice around his neck because it was so long. They hurried and got it off of him and passed him right to me. All I could think was how beautiful he was, how happy I was, and that I couldn’t believe this was really my son, after all this time I finally got to hold him!" },
+    { id: 'j-megan', chapter: 'arrival', sort: 1.7, time: '', kind: 'journal', title: '“I’m just here for the birthday party!”',
+      body: "Megan, the respiratory therapist, cleared out his airways for barely 10 seconds and then immediately started posing us for photos. Our nurse warned us she was like that. She said, “I’m just here for the birthday party!” I loved it though, some of my favorite photos were captured then with all the raw emotion of the moment. Mom was behind us to my left taking video and Rachel was behind all the monitors to our right with our camera getting Beau’s reaction." },
+    { id: 'j-nurse', chapter: 'arrival', sort: 6.5, time: '', kind: 'journal', title: 'Skin-to-skin and the first feed',
+      body: "Soon we did skin-to-skin while the midwife sewed me up. Apparently I had a pretty severe internal tear, likely because of such a rapid delivery. When she finished she showed us the placenta and then I got to nurse for the first time. He latched so easily and nursed for nearly 45 minutes! I was really excited to nurse, I think I’m going to love that time with all my babies." },
+    { id: 'j-stats', chapter: 'arrival', sort: 11.7, time: '', kind: 'journal', title: '7 lbs 10 oz, 19¾ inches of pure joy',
+      body: "Afterwards they did his newborn assessments. He was 7 lbs 10 oz, 19 ¾ in of pure joy! His apgar score was 8, only two points off for color-his hands and feet were pretty purple for the first day. Beau got to do skin-to-skin with him and I couldn’t believe how perfect and natural they looked together!" },
+
+    { id: 'j-thayne', chapter: 'evening', sort: 1.5, time: '', kind: 'journal', title: 'Uncle Thayne',
+      body: "Thayne was our first visitor and got to hold him for 30 minutes in the rocking chair. Mom told us later that that time was life changing for him as Myles helped him realize that love and family and children are what life is all about. He decided then and there that he wanted a child and so he’d better change how he approaches life and dating!! Miracle baby Myles already making a big difference!" },
+    { id: 'j-whites', chapter: 'evening', sort: 2.5, time: '', kind: 'journal', title: 'The Whites, in groups',
+      body: "Next dad came with Louis and Jojo then the Whites came in groups. First Lucy, Rocky, Charlie, and Gabby came in, each gave me a hug and then held the baby. Charlie got emotional when he hugged me and held the baby. Rocky gave us one of my all time favorite gifts: a willow angel statue he hand carved of Beau and I with a baby!" },
+    { id: 'j-laura', chapter: 'evening', sort: 3.5, time: '', kind: 'journal', title: 'Grandma Laura',
+      body: "That night Grandma Laura came after having cleaned our whole condo. Finally mom and Rachel left and it was just our little family for our first night together!" },
+    { id: 'j-loved', chapter: 'evening', sort: 4, time: '', kind: 'journal', title: 'Angels on this side of the veil',
+      body: "I loved the whole birth experience from beginning to end. There were so many prayers answered the whole day. All our nurses and the midwife and techs were so accommodating and friendly. They along with mom and Rachel were our angels on this side of the veil. I was so so happy to have them there, they were so encouraging, helpful, and joyful all day! Most of all I absolutely loved meeting my son and seeing Beau meet him too. My heart feels like bursting. I have so much love for the two of them! I wish I could bottle the feelings of this day and keep them forever, I couldn’t ever possibly adequately describe it but a start is to say it was so intensely joyful and full of love!" },
+
+    { id: 'j-n1', chapter: 'night', sort: 1, time: 'Overnight', kind: 'journal', title: 'Every two hours',
+      body: "We didn’t get much sleep with the nurses coming in every two hours (our overnight nurse was the complete opposite of our labor nurse, quiet, timid, and super gentle but we loved both!), changing my pads every couple hours, and trying to nurse every 2-3 hours. It was like he completely forgot how to nurse after the first time and it was so hard to wake him up! I would undress him and hold him up and rub his back until he fussed but then he would fall asleep the second I pulled him to the breast." },
+    { id: 'j-n2', chapter: 'night', sort: 2, time: '', kind: 'journal', title: 'A vision of what’s coming',
+      body: "At one point I had a vision of the next few months/years that was simultaneously the sweetest and most intimidating thing ever: Beau pacing the room holding Myles on his chest, rocking and shhshing him, looking so tired and desperate like he’d do anything to get Myles to stop fussing. Parenthood here we come!" },
+    { id: 'j-n3', chapter: 'night', sort: 3, time: '', kind: 'journal', title: 'Baby heaven',
+      body: "He went to the nursery for 3 hours in between feeds so we could sleep which was a lifesaver. But as soon as he came back he didn’t leave my bed for the rest of the night and I was in absolute baby heaven." },
+
+    { id: 'j-d2a', chapter: 'day2', sort: 1, time: 'Morning', kind: 'journal', title: 'My boys',
+      body: "I woke up to the most precious sight; my boys cuddling together on the couch! This first quiet morning together as a family was one of my favorite moments of our hospital stay. Around 10am I took my first bath and shower postpartum then we had back to back visitors until 10pm that night! First mom and dad came, brought breakfast and helped us take a bunch of photos. Next Josh, Brielle, Thayne, and Louis came, then Amber, Raya, Kingston, Roman, and Lakelyn, Nana and Tama, the Whites again, Katelyn, Penny, Grandma Lauri and Grandpa Garry, and then Rachel and Beau stayed till late in the evening. I can’t believe how adored this little guy is, he definitely has a VILLAGE of people who would do anything for him." },
+    { id: 'j-d2b', chapter: 'day2', sort: 2, time: '', kind: 'journal', title: 'The pirate eye',
+      body: "Everyone kept saying how perfect he looked, how they had seen plenty of ugly babies but that Myles was actually so cute. Because of how long he was deep in the birth canal while we waited for the midwife, he came out with a bit of a coney head but by day 2 it had gone down substantially and he looked completely perfect. He had trouble opening his left eye so whenever he was awake he’d do this adorable little pirate eye by just opening his right eye to look at you. Everyone loved it." },
+    { id: 'j-d2c', chapter: 'day2', sort: 3, time: 'Night two', kind: 'journal', title: 'A singer',
+      body: "Our second night was much smoother, he nursed a lot easier and I bet we got around 6-7 hours of sleep. When the nurses brought him back from his newborn tests they said he was a singer! That he was constantly cooing and making noises at them. They also told Beau that he was really strong for a newborn, that he would hold his head up on his own and had strong arms." },
+
+    { id: 'j-home', chapter: 'home', sort: 1, time: 'Morning', kind: 'journal', title: 'The hot dad walk',
+      body: "In the morning we took more photos and video of him with the beautiful view we had out the massive windows of the mountains in the cozy stormy weather. Then he saw the pediatrician, we had our final meal from the cafeteria, then we were discharged and I got to watch Beau do the hot dad walk carrying Myles in the carseat out to the car. Here begins our life as a family of 3!" },
   ],
 };
