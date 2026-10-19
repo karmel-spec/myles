@@ -27,8 +27,6 @@ window.MYLES_STORY = {
       { label: 'Pushing', value: '17 min', note: 'at record-breaking speed', tone: 'sage' },
       { label: 'Apgar', value: '8 · 9', note: 'points lost only for color' },
       { label: 'Room', value: '115', note: 'Orem Community Hospital' },
-      { label: 'Time guesses', value: '1:13 · 2:30', note: "Beau was four minutes off; Abby's guess, he beat", tone: 'sage' },
-      { label: 'Weight guesses', value: '7-8 · 7-11', note: "Abby's guess was Beau's exact birth weight" },
     ],
     team: 'Midwife, Nurse Kendra, Megan the respiratory therapist and the care team, with Dr. Hill on standby.',
     visitors: 'Uncle Thayne, Grandpa Larson, Louis and JoJo, then the whole White family at six.',
