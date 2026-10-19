@@ -194,7 +194,7 @@
   if (!DESIGNS[designKey]) designKey = 'linen';
   const D = () => DESIGNS[designKey];
   function applyDesign() { document.documentElement.dataset.design = designKey; $('#design').value = designKey; }
-  $('#design').addEventListener('change', () => { designKey = $('#design').value; try { localStorage.setItem('babybook_design', designKey); } catch (e) {} applyDesign(); renderBook(); });
+  $('#design').addEventListener('change', () => { designKey = $('#design').value; try { localStorage.setItem('babybook_design', designKey); } catch (e) {} applyDesign(); showView('book'); });   // the designs live in the pages: show them
   applyDesign();
 
   // Pages are measured as they're filled, so the web fonts must be in before the
