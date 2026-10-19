@@ -189,9 +189,9 @@
     editorial: { label: 'Editorial',     crop: true,  fill: true,  bleed: true,  frame: false, dark: false },
     noir:      { label: 'Noir',          crop: true,  fill: true,  bleed: true,  frame: false, dark: true },
   };
-  let designKey = 'linen';
-  try { designKey = localStorage.getItem('babybook_design') || 'linen'; } catch (e) {}
-  if (!DESIGNS[designKey]) designKey = 'linen';
+  let designKey = 'editorial';
+  try { designKey = localStorage.getItem('babybook_design') || 'editorial'; } catch (e) {}
+  if (!DESIGNS[designKey]) designKey = 'editorial';
   const D = () => DESIGNS[designKey];
   function applyDesign() { document.documentElement.dataset.design = designKey; $('#design').value = designKey; }
   $('#design').addEventListener('change', () => { designKey = $('#design').value; try { localStorage.setItem('babybook_design', designKey); } catch (e) {} applyDesign(); showView('book'); });   // the designs live in the pages: show them
@@ -317,14 +317,16 @@
       const hero = heroOf(ch);
       const fullPage = (f) => { const fp = photoPage(f.photo, f.title); if (f.words) { const plate = fp.querySelector('.plate'); plate.textContent = ''; plate.appendChild(el('b', null, f.title)); plate.appendChild(document.createTextNode(f.words)); } };
       const flushFull = () => { pendingFull.splice(0).forEach(fullPage); };
-      // Leaving a page in a filling design: a photo row at its foot is stretched to the bottom
-      // edge (cropping a little more) so the page ends on the photo rather than on a gap.
+      // Leaving a page in a filling design: the page's last photo row grows to take up the room
+      // left (cropping a little more). At the foot of the page it runs off the bottom edge, so
+      // the page ends on the photo; higher up it pushes the words below it down to the foot.
       const finishPage = () => {
         if (!p || !D().fill || !inner) return;
-        const last = inner.lastElementChild; if (!last || !last.classList.contains('pset')) return;
-        const room = spare(); if (room < 0.5) return;
-        const r = last.querySelector('.prow'); const h = parseFloat(r.style.height) + room + (last.querySelector('.pcap') ? 0 : PAD_B);
-        r.style.height = h.toFixed(2) + 'cqw'; if (!last.querySelector('.pcap')) last.classList.add('bottom');
+        const sets = inner.querySelectorAll('.pset'); const last = sets[sets.length - 1]; if (!last) return;
+        const room = Math.min(spare(), 45); if (room < 0.5) return;
+        const atFoot = last === inner.lastElementChild && !last.querySelector('.pcap');
+        const r = last.querySelector('.prow'); const h = parseFloat(r.style.height) + room + (atFoot ? PAD_B : 0);
+        r.style.height = h.toFixed(2) + 'cqw'; if (atFoot) last.classList.add('bottom');
       };
       const newPage = () => { finishPage(); flushFull(); p = frame(page()); inner = el('div', 'inner'); p.appendChild(inner); };
       const openerPage = () => {           // full-bleed hero with the chapter title set over its foot
